@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ticket Clicker</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="game.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Ticket Clicker home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48" role="img">
+              <path d="M8 11a5 5 0 0 1 5-5h22a5 5 0 0 1 5 5v26a5 5 0 0 1-5 5H13a5 5 0 0 1-5-5V11Z" />
+              <path d="M15 16h18M15 24h18M15 32h11" />
+              <circle cx="35" cy="34" r="7" />
+              <path d="m32 34 2 2 4-5" />
+            </svg>
+          </span>
+          <span>
+            <strong>Ticket Clicker</strong>
+            <small>IT office issue resolver</small>
+          </span>
+        </a>
+        <div class="top-actions" aria-label="Progress actions">
+          <button class="icon-action" id="saveButton" type="button" title="Save progress" aria-label="Save progress">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 3h12l2 2v16H5V3Z" />
+              <path d="M8 3v6h8V3M8 21v-7h8v7" />
+            </svg>
+          </button>
+          <button class="icon-action" id="resetButton" type="button" title="Reset shift" aria-label="Reset shift">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 12a8 8 0 1 1-2.35-5.66" />
+              <path d="M20 4v6h-6" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="game-grid">
+        <aside class="panel metrics-panel" aria-label="Helpdesk metrics">
+          <div class="panel-heading">
+            <span class="panel-kicker">Live queue</span>
+            <h2>Shift Board</h2>
+          </div>
+
+          <div class="metric-list">
+            <div class="metric-row">
+              <span>Total closed</span>
+              <strong id="totalValue">0</strong>
+            </div>
+            <div class="metric-row">
+              <span>Open queue</span>
+              <strong id="queueValue">0</strong>
+            </div>
+            <div class="metric-row">
+              <span>SLA heat</span>
+              <strong id="slaValue">Calm</strong>
+            </div>
+            <div class="metric-row">
+              <span>Productivity bonus</span>
+              <strong id="bonusValue">0%</strong>
+            </div>
+          </div>
+
+          <div class="heat-meter" aria-label="SLA heat meter">
+            <span id="heatMeterFill"></span>
+          </div>
+
+          <section class="feed" aria-label="Incident feed">
+            <div class="feed-heading">
+              <h3>Incident Feed</h3>
+              <span id="saveStatus">Ready</span>
+            </div>
+            <ol id="logList" class="log-list"></ol>
+          </section>
+        </aside>
+
+        <section class="desk-stage" aria-label="Ticket resolution desk">
+          <canvas id="particleCanvas" aria-hidden="true"></canvas>
+
+          <div class="ticket-stream" aria-hidden="true">
+            <span class="swimming-ticket"></span>
+            <span class="swimming-ticket"></span>
+            <span class="swimming-ticket"></span>
+            <span class="swimming-ticket"></span>
+            <span class="swimming-ticket"></span>
+            <span class="swimming-ticket"></span>
+          </div>
+
+          <div class="bug-layer" aria-hidden="true">
+            <span class="office-bug"></span>
+            <span class="office-bug"></span>
+            <span class="office-bug"></span>
+            <span class="office-bug"></span>
+          </div>
+
+          <button id="ticketButton" class="ticket-button" type="button">
+            <span class="ticket-scoreboard">
+              <span class="ticket-score">
+                <small>Resolved tickets</small>
+                <strong id="resolvedValue">0</strong>
+              </span>
+            </span>
+            <span class="ticket-art" aria-hidden="true">
+              <svg viewBox="0 0 280 210" role="img">
+                <path class="ticket-shadow" d="M47 39 211 18c12-2 23 7 24 19l14 111c2 12-7 23-19 24L66 192c-12 2-23-7-24-19L28 62c-2-12 7-22 19-23Z" />
+                <path class="ticket-back" d="M42 31h169c13 0 23 10 23 23v111c0 13-10 23-23 23H42c-13 0-23-10-23-23V54c0-13 10-23 23-23Z" />
+                <path class="ticket-front" d="M65 15h170c13 0 23 10 23 23v111c0 13-10 23-23 23H65c-13 0-23-10-23-23V38c0-13 10-23 23-23Z" />
+                <path class="ticket-notch" d="M42 69a22 22 0 0 0 0 44V69ZM258 69a22 22 0 0 1 0 44V69Z" />
+                <path class="ticket-lines" d="M86 62h92M86 94h128M86 126h74" />
+                <path class="ticket-check" d="m185 124 20 20 42-58" />
+                <path class="ticket-dash" d="M68 42v106" />
+              </svg>
+            </span>
+            <span class="click-label">Resolve Ticket</span>
+            <span class="ticket-rate">
+              <small>Tickets per second</small>
+              <strong id="tpsValue">0</strong>
+            </span>
+            <span class="click-power" id="clickPowerLabel">+1 per click</span>
+          </button>
+
+          <div id="floatingTextLayer" class="floating-layer" aria-hidden="true"></div>
+        </section>
+
+        <aside class="panel upgrades-panel" aria-label="Procurement upgrades">
+          <div class="panel-heading">
+            <span class="panel-kicker">Procurement</span>
+            <h2>Upgrades</h2>
+          </div>
+          <div id="upgradeList" class="upgrade-list"></div>
+        </aside>
+      </main>
+
+      <section class="achievement-band" aria-label="Achievements">
+        <div class="achievement-heading">
+          <span class="panel-kicker">Desk reputation</span>
+          <h2>Achievements</h2>
+        </div>
+        <div id="achievementList" class="achievement-list"></div>
+      </section>
+    </div>
+  </body>
+</html>
