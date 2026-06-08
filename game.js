@@ -1056,7 +1056,11 @@
     bonus: document.getElementById("bonusValue"),
     heatMeter: document.getElementById("heatMeterFill"),
     clickPower: document.getElementById("clickPowerLabel"),
+    deskStage: document.querySelector(".desk-stage"),
+    incidentAlert: document.getElementById("incidentAlert"),
+    officeEvolution: document.getElementById("officeEvolution"),
     ticketButton: document.getElementById("ticketButton"),
+    ticketStamp: document.getElementById("ticketStamp"),
     upgradeList: document.getElementById("upgradeList"),
     achievementList: document.getElementById("achievementList"),
     logList: document.getElementById("logList"),
@@ -1076,8 +1080,12 @@
   let renderAccumulator = 0;
   let saveAccumulator = 0;
   let statusTimer = 0;
+  let stampTimer = 0;
   let particles = [];
   let decorativeSprites = [];
+  const upgradeViews = new Map();
+  let majorIncidentUntil = 0;
+  let wasMajorIncident = false;
 
   if (!state.log.length) {
     state.log.push({
@@ -1094,6 +1102,7 @@
   render();
 
   els.ticketButton.addEventListener("click", handleTicketClick);
+  els.officeBugs.forEach((bug) => bug.addEventListener("click", handleBugSquash));
   els.upgradeList.addEventListener("click", handleUpgradeClick);
   els.saveButton.addEventListener("click", () => saveState(true));
   els.resetButton.addEventListener("click", resetGame);
@@ -1218,9 +1227,68 @@
     addResolved(clickPower);
     spawnBurst(point.x, point.y, clickPower);
     showFloatingText(point.x, point.y, `+${formatNumber(clickPower)}`);
+    playTicketStamp();
     checkMilestones();
     checkAchievements();
     render();
+  }
+
+  function handleBugSquash(event) {
+    event.stopPropagation();
+
+    const bug = event.currentTarget;
+    if (bug.classList.contains("is-squashed")) {
+      return;
+    }
+
+    const sprite = decorativeSprites.find((item) => item.element === bug);
+    const stageRect = els.deskStage.getBoundingClientRect();
+    const bugRect = bug.getBoundingClientRect();
+    const pointerX = event.clientX || bugRect.left + bugRect.width / 2;
+    const pointerY = event.clientY || bugRect.top + bugRect.height / 2;
+    const point = {
+      x: pointerX - stageRect.left,
+      y: pointerY - stageRect.top,
+    };
+    const bonus = Math.max(5, getClickPower() * 8 + getTicketsPerSecond() * 0.5);
+
+    addResolved(bonus);
+    spawnBurst(point.x, point.y, bonus);
+    showFloatingText(point.x, point.y, `BUG BONUS +${formatNumber(bonus)}`);
+    setSaveStatus("Bug squashed");
+    bug.classList.add("is-squashed");
+
+    if (sprite) {
+      sprite.squashed = true;
+    }
+
+    window.setTimeout(() => {
+      bug.classList.remove("is-squashed");
+      if (sprite) {
+        const stageWidth = els.canvas.clientWidth;
+        const stageHeight = els.canvas.clientHeight;
+        sprite.x = randomBetween(0, Math.max(1, stageWidth - sprite.width));
+        sprite.y = randomBetween(0, Math.max(1, stageHeight - sprite.height));
+        sprite.pauseRemaining = 0;
+        sprite.squashed = false;
+        chooseNewDecorativeCourse(sprite);
+        positionDecorativeSprite(sprite);
+      }
+    }, randomBetween(2200, 5200));
+
+    checkMilestones();
+    checkAchievements();
+    render();
+  }
+
+  function playTicketStamp() {
+    window.clearTimeout(stampTimer);
+    els.ticketStamp.classList.remove("is-stamping");
+    void els.ticketStamp.offsetWidth;
+    els.ticketStamp.classList.add("is-stamping");
+    stampTimer = window.setTimeout(() => {
+      els.ticketStamp.classList.remove("is-stamping");
+    }, 560);
   }
 
   function handleUpgradeClick(event) {
@@ -1248,6 +1316,7 @@
     state.totalSpent += cost;
     state.upgrades[upgrade.id] = owned(upgrade.id) + 1;
     addLog(`Procurement approved: ${upgrade.name}.`, "success");
+    setSaveStatus("Procurement approved");
     checkAchievements();
     saveState(false);
     render();
@@ -1360,6 +1429,9 @@
     state.openTickets += amount;
     state.lastIncidentLabel = incident.label;
     state.nextIncidentAt = Date.now() + randomBetween(30000, 70000);
+    if (amount >= 100 || state.openTickets >= 160) {
+      majorIncidentUntil = Date.now() + 6500;
+    }
     addLog(`${incident.label} +${formatNumber(amount)} open tickets.`, "warning");
   }
 
@@ -1434,6 +1506,8 @@
       type: "success",
       time: Date.now(),
     });
+    majorIncidentUntil = 0;
+    wasMajorIncident = false;
     particles = [];
     saveState(false);
     render();
@@ -1462,52 +1536,96 @@
     els.heatMeter.style.background = sla.color;
     els.clickPower.textContent = `+${formatRate(clickPower)} per click`;
 
+    renderMajorIncident(sla);
+    renderOfficeEvolution();
     renderUpgrades();
     renderAchievements();
     renderLog();
   }
 
-  function renderUpgrades() {
-    const fragment = document.createDocumentFragment();
+  function renderMajorIncident(sla) {
+    const active = sla.label === "Major Incident" || Date.now() < majorIncidentUntil;
+    els.deskStage.classList.toggle("major-incident", active);
+    els.incidentAlert.setAttribute("aria-hidden", String(!active));
 
-    for (const upgrade of upgradeDefs) {
-      const cost = getUpgradeCost(upgrade);
-      const count = owned(upgrade.id);
-      const button = document.createElement("button");
-      button.className = "upgrade-item";
-      button.type = "button";
-      button.dataset.upgradeId = upgrade.id;
-      button.disabled = state.resolved < cost;
-      button.setAttribute("aria-label", `Buy ${upgrade.name} for ${formatNumber(cost)} tickets`);
-
-      const copy = document.createElement("span");
-      copy.className = "upgrade-copy";
-
-      const name = document.createElement("strong");
-      name.textContent = upgrade.name;
-
-      const description = document.createElement("span");
-      description.textContent = upgrade.description;
-
-      copy.append(name, description);
-
-      const meta = document.createElement("span");
-      meta.className = "upgrade-meta";
-
-      const costNode = document.createElement("span");
-      costNode.className = "upgrade-cost";
-      costNode.textContent = formatNumber(cost);
-
-      const ownedNode = document.createElement("span");
-      ownedNode.className = "upgrade-owned";
-      ownedNode.textContent = `Owned ${formatNumber(count)}`;
-
-      meta.append(costNode, ownedNode);
-      button.append(copy, meta);
-      fragment.append(button);
+    if (active && !wasMajorIncident && !reduceMotion) {
+      els.deskStage.classList.remove("incident-hit");
+      void els.deskStage.offsetWidth;
+      els.deskStage.classList.add("incident-hit");
+      window.setTimeout(() => els.deskStage.classList.remove("incident-hit"), 480);
     }
 
-    els.upgradeList.replaceChildren(fragment);
+    wasMajorIncident = active;
+  }
+
+  function renderOfficeEvolution() {
+    const classes = {
+      "has-coffee": owned("coffee_refill") > 0,
+      "has-monitor": owned("second_monitor") > 0 || owned("monitoring_bot") > 0,
+      "has-bot": owned("monitoring_bot") > 0 || owned("auto_triage") > 0,
+      "has-rack":
+        owned("patch_window") > 0 ||
+        owned("global_noc") > 0 ||
+        owned("cloud_command_center") > 0,
+    };
+
+    for (const [className, enabled] of Object.entries(classes)) {
+      els.officeEvolution.classList.toggle(className, enabled);
+    }
+  }
+
+  function renderUpgrades() {
+    if (!upgradeViews.size) {
+      const fragment = document.createDocumentFragment();
+
+      for (const upgrade of upgradeDefs) {
+        const button = document.createElement("button");
+        button.className = "upgrade-item";
+        button.type = "button";
+        button.dataset.upgradeId = upgrade.id;
+
+        const copy = document.createElement("span");
+        copy.className = "upgrade-copy";
+
+        const name = document.createElement("strong");
+        name.textContent = upgrade.name;
+
+        const description = document.createElement("span");
+        description.textContent = upgrade.description;
+
+        copy.append(name, description);
+
+        const meta = document.createElement("span");
+        meta.className = "upgrade-meta";
+
+        const costNode = document.createElement("span");
+        costNode.className = "upgrade-cost";
+
+        const ownedNode = document.createElement("span");
+        ownedNode.className = "upgrade-owned";
+
+        meta.append(costNode, ownedNode);
+        button.append(copy, meta);
+        fragment.append(button);
+        upgradeViews.set(upgrade.id, { button, costNode, ownedNode });
+      }
+
+      els.upgradeList.append(fragment);
+    }
+
+    for (const upgrade of upgradeDefs) {
+      const view = upgradeViews.get(upgrade.id);
+      const cost = getUpgradeCost(upgrade);
+      const count = owned(upgrade.id);
+
+      view.button.disabled = state.resolved < cost;
+      view.button.setAttribute(
+        "aria-label",
+        `Buy ${upgrade.name} for ${formatNumber(cost)} tickets`,
+      );
+      view.costNode.textContent = formatNumber(cost);
+      view.ownedNode.textContent = `Owned ${formatNumber(count)}`;
+    }
   }
 
   function renderAchievements() {
@@ -1667,6 +1785,7 @@
       targetVy: Math.sin(angle) * speed,
       changeIn: randomBetween(0.6, 3.2) + index * 0.08,
       pauseRemaining: 0,
+      squashed: false,
       age: randomBetween(0, 20),
       phase: randomBetween(0, Math.PI * 2),
     };
@@ -1681,6 +1800,10 @@
     const stageHeight = els.canvas.clientHeight;
 
     for (const sprite of decorativeSprites) {
+      if (sprite.squashed) {
+        continue;
+      }
+
       sprite.age += delta;
       sprite.changeIn -= delta;
 

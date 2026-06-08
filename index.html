@@ -82,6 +82,19 @@
         <section class="desk-stage" aria-label="Ticket resolution desk">
           <canvas id="particleCanvas" aria-hidden="true"></canvas>
 
+          <div id="incidentAlert" class="incident-alert" role="status" aria-live="polite" aria-hidden="true">
+            <span class="incident-light" aria-hidden="true"></span>
+            <strong>Major Incident</strong>
+            <span class="incident-light" aria-hidden="true"></span>
+          </div>
+
+          <div id="officeEvolution" class="office-evolution" aria-hidden="true">
+            <span class="office-prop prop-coffee"></span>
+            <span class="office-prop prop-monitor"></span>
+            <span class="office-prop prop-bot"></span>
+            <span class="office-prop prop-rack"></span>
+          </div>
+
           <div class="ticket-stream" aria-hidden="true">
             <span class="swimming-ticket"></span>
             <span class="swimming-ticket"></span>
@@ -91,11 +104,11 @@
             <span class="swimming-ticket"></span>
           </div>
 
-          <div class="bug-layer" aria-hidden="true">
-            <span class="office-bug"></span>
-            <span class="office-bug"></span>
-            <span class="office-bug"></span>
-            <span class="office-bug"></span>
+          <div class="bug-layer" aria-label="Bonus bugs">
+            <button class="office-bug" type="button" aria-label="Squash bug for bonus tickets" title="Squash bug"></button>
+            <button class="office-bug" type="button" aria-label="Squash bug for bonus tickets" title="Squash bug"></button>
+            <button class="office-bug" type="button" aria-label="Squash bug for bonus tickets" title="Squash bug"></button>
+            <button class="office-bug" type="button" aria-label="Squash bug for bonus tickets" title="Squash bug"></button>
           </div>
 
           <button id="ticketButton" class="ticket-button" type="button">
@@ -110,11 +123,11 @@
                 <path class="ticket-shadow" d="M47 39 211 18c12-2 23 7 24 19l14 111c2 12-7 23-19 24L66 192c-12 2-23-7-24-19L28 62c-2-12 7-22 19-23Z" />
                 <path class="ticket-back" d="M42 31h169c13 0 23 10 23 23v111c0 13-10 23-23 23H42c-13 0-23-10-23-23V54c0-13 10-23 23-23Z" />
                 <path class="ticket-front" d="M65 15h170c13 0 23 10 23 23v111c0 13-10 23-23 23H65c-13 0-23-10-23-23V38c0-13 10-23 23-23Z" />
-                <path class="ticket-notch" d="M42 69a22 22 0 0 0 0 44V69ZM258 69a22 22 0 0 1 0 44V69Z" />
                 <path class="ticket-lines" d="M86 62h92M86 94h128M86 126h74" />
                 <path class="ticket-check" d="m185 124 20 20 42-58" />
                 <path class="ticket-dash" d="M68 42v106" />
               </svg>
+              <span id="ticketStamp" class="ticket-stamp">Resolved</span>
             </span>
             <span class="click-label">Resolve Ticket</span>
             <span class="ticket-rate">

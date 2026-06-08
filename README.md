@@ -46,9 +46,12 @@ Progress saves automatically in the browser using `localStorage`.
 - 🚨 88 random helpdesk incidents
 - 🤖 Passive automation and offline progress
 - 🏆 Achievements with productivity bonuses
+- 🚨 Major-incident lighting and alert effects
+- ✅ Animated ticket-resolution stamps
 - 📱 Responsive desktop, landscape, and mobile layouts
 - 🎫 Randomly wandering tickets
-- 🐛 Bugs that roam freely because QA signed off
+- 🐛 Bonus bugs that roam freely until you squash them
+- 🏢 An office that gains equipment as procurement succeeds
 - 📦 No dependencies or build step
 
 ## 📁 Project Files
