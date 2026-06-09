@@ -43,7 +43,7 @@ Progress saves automatically in the browser using `localStorage`.
 ## ✨ Features
 
 - 🛒 59 IT-themed procurement upgrades
-- 🚨 88 random helpdesk incidents
+- 🚨 288 random helpdesk incidents
 - 🤖 Passive automation and offline progress
 - 🏆 Achievements with productivity bonuses
 - 🚨 Major-incident lighting and alert effects
