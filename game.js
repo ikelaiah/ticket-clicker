@@ -1,7 +1,7 @@
 (() => {
   const STORAGE_KEY = "ticket-clicker-state-v1";
   const MAX_OFFLINE_SECONDS = 60 * 60 * 8;
-  const PRIMARY_COMPACT_THRESHOLD = 1000000000000;
+  const PRIMARY_COMPACT_THRESHOLD = 1000000000000000;
 
   const upgradeDefs = [
     {
@@ -1253,6 +1253,43 @@
   ];
 
   const milestoneQueue = [50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
+  const buffDefs = [
+    {
+      id: "coffee_rush",
+      name: "Coffee Rush",
+      description: "Click power +50%",
+      duration: 36000,
+      effects: { click: 1.5 },
+    },
+    {
+      id: "change_freeze",
+      name: "Actual Change Freeze",
+      description: "Incoming tickets -45%",
+      duration: 48000,
+      effects: { incoming: 0.55 },
+    },
+    {
+      id: "vendor_escalation",
+      name: "Vendor Escalation",
+      description: "Automation output +40%",
+      duration: 42000,
+      effects: { passive: 1.4 },
+    },
+    {
+      id: "read_only_friday",
+      name: "Read-Only Friday",
+      description: "All resolution +25%",
+      duration: 60000,
+      effects: { click: 1.25, passive: 1.25 },
+    },
+  ];
+  const queueCategoryDefs = [
+    { id: "access", name: "Access", color: "#58c6a7" },
+    { id: "software", name: "Software", color: "#f2c14e" },
+    { id: "network", name: "Network", color: "#6da8d9" },
+    { id: "security", name: "Security", color: "#e05d5d" },
+    { id: "data", name: "Data", color: "#b58ad8" },
+  ];
 
   const numberFormat = new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
@@ -1279,11 +1316,33 @@
     clickPower: document.getElementById("clickPowerLabel"),
     deskStage: document.querySelector(".desk-stage"),
     incidentAlert: document.getElementById("incidentAlert"),
+    activeIncident: document.getElementById("activeIncident"),
+    activeIncidentCategory: document.getElementById("activeIncidentCategory"),
+    activeIncidentText: document.getElementById("activeIncidentText"),
+    activeIncidentImpact: document.getElementById("activeIncidentImpact"),
     officeEvolution: document.getElementById("officeEvolution"),
+    officeProps: [...document.querySelectorAll(".office-prop")],
+    ticketConveyor: document.getElementById("ticketConveyor"),
+    conveyorTickets: [...document.querySelectorAll(".conveyor-ticket")],
     ticketButton: document.getElementById("ticketButton"),
     ticketStamp: document.getElementById("ticketStamp"),
     upgradeList: document.getElementById("upgradeList"),
+    buyModeButtons: [...document.querySelectorAll("[data-buy-mode]")],
+    upgradeFilterButtons: [...document.querySelectorAll("[data-upgrade-filter]")],
+    upgradeResultCount: document.getElementById("upgradeResultCount"),
     achievementList: document.getElementById("achievementList"),
+    achievementDrawer: document.getElementById("achievementDrawer"),
+    achievementDrawerButton: document.getElementById("achievementDrawerButton"),
+    achievementDrawerBackdrop: document.getElementById("achievementDrawerBackdrop"),
+    achievementDrawerClose: document.getElementById("achievementDrawerClose"),
+    reputationLevel: document.getElementById("reputationLevel"),
+    reputationProgressFill: document.getElementById("reputationProgressFill"),
+    reputationNext: document.getElementById("reputationNext"),
+    reputationBonus: document.getElementById("reputationBonus"),
+    queueCompositionTotal: document.getElementById("queueCompositionTotal"),
+    queueCompositionList: document.getElementById("queueCompositionList"),
+    buffStrip: document.getElementById("buffStrip"),
+    timelineList: document.getElementById("timelineList"),
     logList: document.getElementById("logList"),
     saveButton: document.getElementById("saveButton"),
     resetButton: document.getElementById("resetButton"),
@@ -1305,15 +1364,30 @@
   let particles = [];
   let decorativeSprites = [];
   const upgradeViews = new Map();
+  const affordableState = new Map();
   let majorIncidentUntil = 0;
   let wasMajorIncident = false;
+  let activeIncident = null;
+  let buyMode = "1";
+  let upgradeFilter = "all";
+  let achievementDrawerOpen = false;
+  let achievementRenderSignature = "";
+  let queueRenderSignature = "";
+  let buffRenderSignature = "";
+  let timelineRenderSignature = "";
+  let timelineEvents = state.log
+    .slice(0, 4)
+    .reverse()
+    .map((item) => ({ message: item.message, type: item.type, time: item.time }));
 
   if (!state.log.length) {
-    state.log.push({
+    const shiftStart = {
       message: "Shift started. The queue is already pretending it is fine.",
       type: "success",
       time: Date.now(),
-    });
+    };
+    state.log.push(shiftStart);
+    timelineEvents.push(shiftStart);
   }
 
   applyOfflineProgress();
@@ -1325,9 +1399,23 @@
   els.ticketButton.addEventListener("click", handleTicketClick);
   els.officeBugs.forEach((bug) => bug.addEventListener("click", handleBugSquash));
   els.upgradeList.addEventListener("click", handleUpgradeClick);
+  els.buyModeButtons.forEach((button) => button.addEventListener("click", handleBuyModeChange));
+  els.upgradeFilterButtons.forEach((button) =>
+    button.addEventListener("click", handleUpgradeFilterChange),
+  );
+  els.achievementDrawerButton.addEventListener("click", () =>
+    setAchievementDrawerOpen(!achievementDrawerOpen),
+  );
+  els.achievementDrawerBackdrop.addEventListener("click", () => setAchievementDrawerOpen(false));
+  els.achievementDrawerClose.addEventListener("click", () => setAchievementDrawerOpen(false));
   els.saveButton.addEventListener("click", () => saveState(true));
   els.resetButton.addEventListener("click", resetGame);
   window.addEventListener("resize", handleResize);
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && achievementDrawerOpen) {
+      setAchievementDrawerOpen(false);
+    }
+  });
   window.addEventListener("beforeunload", () => saveState(false));
   requestAnimationFrame(frame);
 
@@ -1343,6 +1431,8 @@
       log: [],
       lastSave: Date.now(),
       nextIncidentAt: Date.now() + randomBetween(28000, 52000),
+      nextBuffAt: Date.now() + randomBetween(30000, 55000),
+      activeBuffs: {},
       lastIncidentLabel: "",
       nextMilestoneIndex: 0,
     };
@@ -1368,6 +1458,9 @@
         achievements: {
           ...(saved.achievements || {}),
         },
+        activeBuffs: {
+          ...(saved.activeBuffs || {}),
+        },
         log: Array.isArray(saved.log) ? saved.log.slice(0, 6) : [],
       };
 
@@ -1380,9 +1473,22 @@
       merged.nextIncidentAt = Number.isFinite(merged.nextIncidentAt)
         ? merged.nextIncidentAt
         : Date.now() + randomBetween(28000, 52000);
+      merged.nextBuffAt = Number.isFinite(merged.nextBuffAt)
+        ? merged.nextBuffAt
+        : Date.now() + randomBetween(30000, 55000);
       merged.nextMilestoneIndex = Number.isFinite(merged.nextMilestoneIndex)
         ? merged.nextMilestoneIndex
         : 0;
+
+      for (const [buffId, expiresAt] of Object.entries(merged.activeBuffs)) {
+        if (
+          !buffDefs.some((buff) => buff.id === buffId) ||
+          !Number.isFinite(expiresAt) ||
+          expiresAt <= Date.now()
+        ) {
+          delete merged.activeBuffs[buffId];
+        }
+      }
 
       for (const upgrade of upgradeDefs) {
         merged.upgrades[upgrade.id] = Math.max(0, Math.floor(cleanNumber(merged.upgrades[upgrade.id])));
@@ -1436,6 +1542,7 @@
       triggerIncident();
     }
 
+    updateBuffs();
     checkMilestones();
     checkAchievements();
   }
@@ -1476,6 +1583,7 @@
     addResolved(bonus);
     spawnBurst(point.x, point.y, bonus);
     showFloatingText(point.x, point.y, `BUG BONUS +${formatNumber(bonus)}`);
+    addTimelineEvent(`Bug squashed: +${formatNumber(bonus)}`, "success");
     setSaveStatus("Bug squashed");
     bug.classList.add("is-squashed");
 
@@ -1514,11 +1622,31 @@
 
   function handleUpgradeClick(event) {
     const button = event.target.closest(".upgrade-item");
-    if (!button) {
+    if (!button || button.disabled) {
       return;
     }
 
     buyUpgrade(button.dataset.upgradeId);
+  }
+
+  function handleBuyModeChange(event) {
+    buyMode = event.currentTarget.dataset.buyMode || "1";
+    for (const button of els.buyModeButtons) {
+      const active = button.dataset.buyMode === buyMode;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    }
+    renderUpgrades();
+  }
+
+  function handleUpgradeFilterChange(event) {
+    upgradeFilter = event.currentTarget.dataset.upgradeFilter || "all";
+    for (const button of els.upgradeFilterButtons) {
+      const active = button.dataset.upgradeFilter === upgradeFilter;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    }
+    renderUpgrades();
   }
 
   function buyUpgrade(upgradeId) {
@@ -1527,17 +1655,18 @@
       return;
     }
 
-    const cost = getUpgradeCost(upgrade);
-    if (state.resolved < cost) {
+    const purchase = getBulkPurchase(upgrade, buyMode);
+    if (!purchase.quantity || state.resolved < purchase.cost) {
       setSaveStatus("Need more tickets");
       return;
     }
 
-    state.resolved -= cost;
-    state.totalSpent += cost;
-    state.upgrades[upgrade.id] = owned(upgrade.id) + 1;
-    addLog(`Procurement approved: ${upgrade.name}.`, "success");
-    setSaveStatus("Procurement approved");
+    state.resolved -= purchase.cost;
+    state.totalSpent += purchase.cost;
+    state.upgrades[upgrade.id] = owned(upgrade.id) + purchase.quantity;
+    const quantityLabel = purchase.quantity > 1 ? ` x${formatNumber(purchase.quantity)}` : "";
+    addLog(`Procurement approved: ${upgrade.name}${quantityLabel}.`, "success");
+    setSaveStatus(`Approved x${formatNumber(purchase.quantity)}`);
     checkAchievements();
     saveState(false);
     render();
@@ -1555,6 +1684,65 @@
 
   function getUpgradeCost(upgrade) {
     return Math.ceil(upgrade.baseCost * Math.pow(upgrade.growth, owned(upgrade.id)));
+  }
+
+  function getBulkCost(upgrade, quantity) {
+    if (quantity <= 0) {
+      return 0;
+    }
+
+    if (quantity <= 100) {
+      let total = 0;
+      const start = owned(upgrade.id);
+      for (let index = 0; index < quantity; index += 1) {
+        total += Math.ceil(upgrade.baseCost * Math.pow(upgrade.growth, start + index));
+      }
+      return total;
+    }
+
+    const firstRaw = upgrade.baseCost * Math.pow(upgrade.growth, owned(upgrade.id));
+    const geometricTotal =
+      firstRaw * ((Math.pow(upgrade.growth, quantity) - 1) / (upgrade.growth - 1));
+    return Math.ceil(geometricTotal);
+  }
+
+  function getBulkPurchase(upgrade, mode = buyMode) {
+    if (mode !== "max") {
+      const quantity = Math.max(1, Number.parseInt(mode, 10) || 1);
+      return {
+        quantity,
+        cost: getBulkCost(upgrade, quantity),
+      };
+    }
+
+    const budget = Math.max(0, state.resolved);
+    const firstCost = getUpgradeCost(upgrade);
+    if (budget < firstCost) {
+      return { quantity: 0, cost: firstCost };
+    }
+
+    const firstRaw = upgrade.baseCost * Math.pow(upgrade.growth, owned(upgrade.id));
+    const estimate = Math.floor(
+      Math.log1p((budget * (upgrade.growth - 1)) / firstRaw) / Math.log(upgrade.growth),
+    );
+    let quantity = Math.max(1, Math.min(100000, estimate));
+    let cost = getBulkCost(upgrade, quantity);
+
+    while (quantity > 1 && cost > budget) {
+      quantity -= 1;
+      cost = getBulkCost(upgrade, quantity);
+    }
+
+    while (quantity < 100000) {
+      const nextCost = getBulkCost(upgrade, quantity + 1);
+      if (nextCost > budget || !Number.isFinite(nextCost)) {
+        break;
+      }
+      quantity += 1;
+      cost = nextCost;
+    }
+
+    return { quantity, cost };
   }
 
   function getAchievementBonus() {
@@ -1579,7 +1767,7 @@
       }
     }
 
-    return flat * multiplier * getProductivityMultiplier();
+    return flat * multiplier * getProductivityMultiplier() * getBuffMultiplier("click");
   }
 
   function getTicketsPerSecond() {
@@ -1596,13 +1784,46 @@
       }
     }
 
-    return flat * multiplier * getProductivityMultiplier();
+    return flat * multiplier * getProductivityMultiplier() * getBuffMultiplier("passive");
   }
 
   function getIncomingRate() {
     const scale = Math.sqrt(Math.max(0, state.totalResolved)) / 220;
     const queueDrag = Math.min(1.8, state.openTickets / 1800);
-    return Math.min(18, 0.22 + scale + queueDrag);
+    return Math.min(18, 0.22 + scale + queueDrag) * getBuffMultiplier("incoming");
+  }
+
+  function getBuffMultiplier(effect) {
+    const now = Date.now();
+    return buffDefs.reduce((multiplier, buff) => {
+      if ((state.activeBuffs[buff.id] || 0) <= now) {
+        return multiplier;
+      }
+      return multiplier * (buff.effects[effect] || 1);
+    }, 1);
+  }
+
+  function updateBuffs() {
+    const now = Date.now();
+    for (const [buffId, expiresAt] of Object.entries(state.activeBuffs)) {
+      if (expiresAt <= now) {
+        const buff = buffDefs.find((item) => item.id === buffId);
+        delete state.activeBuffs[buffId];
+        if (buff) {
+          addTimelineEvent(`${buff.name} expired`, "info");
+        }
+      }
+    }
+
+    if (now < state.nextBuffAt) {
+      return;
+    }
+
+    const available = buffDefs.filter((buff) => !state.activeBuffs[buff.id]);
+    const buff = available[Math.floor(Math.random() * available.length)] || buffDefs[0];
+    state.activeBuffs[buff.id] = now + buff.duration;
+    state.nextBuffAt = now + randomBetween(65000, 110000);
+    addLog(`Temporary boost: ${buff.name}. ${buff.description}.`, "success");
   }
 
   function getSlaStatus() {
@@ -1650,10 +1871,32 @@
     state.openTickets += amount;
     state.lastIncidentLabel = incident.label;
     state.nextIncidentAt = Date.now() + randomBetween(30000, 70000);
+    activeIncident = {
+      category: classifyIncident(incident.label),
+      label: incident.label,
+      amount,
+      expiresAt: Date.now() + 12000,
+    };
     if (amount >= 100 || state.openTickets >= 160) {
       majorIncidentUntil = Date.now() + 6500;
     }
     addLog(`${incident.label} +${formatNumber(amount)} open tickets.`, "warning");
+  }
+
+  function classifyIncident(label) {
+    const text = label.toLowerCase();
+    const rules = [
+      ["Cybersecurity", /phish|security|mfa|password|firewall|ransom|vulnerab|certificate|soc|siem|secret|access/],
+      ["Networking", /network|wi-fi|wifi|dns|dhcp|router|switch|vlan|vpn|proxy|latency|packet|port 443/],
+      ["Windows", /windows|active directory|group policy|registry|powershell|domain controller|bitlocker/],
+      ["Linux & macOS", /linux|ubuntu|kernel|sudo|macos|macbook|terminal|homebrew|bash|zsh/],
+      ["Data Engineering", /data|csv|pipeline|warehouse|database|sql|schema|etl|spark|kafka|airflow/],
+      ["Integration", /integration|api|webhook|connector|sync|oauth|sftp|middleware/],
+      ["Software Dev", /deploy|devops|build|release|production|repository|git|code|bug|container|kubernetes|docker/],
+      ["OS Support", /operating system|update|patch|driver|reboot|boot|blue screen/],
+      ["General IT", /laptop|monitor|keyboard|mouse|install|software|printer|browser|email|outlook|teams/],
+    ];
+    return rules.find(([, pattern]) => pattern.test(text))?.[0] || "Operations";
   }
 
   function checkMilestones() {
@@ -1683,6 +1926,16 @@
       time: Date.now(),
     });
     state.log = state.log.slice(0, 6);
+    addTimelineEvent(message, type);
+  }
+
+  function addTimelineEvent(message, type = "info") {
+    timelineEvents.unshift({
+      message,
+      type,
+      time: Date.now(),
+    });
+    timelineEvents = timelineEvents.slice(0, 6);
   }
 
   function applyOfflineProgress() {
@@ -1727,6 +1980,14 @@
       type: "success",
       time: Date.now(),
     });
+    timelineEvents = [
+      {
+        message: "Fresh shift started",
+        type: "success",
+        time: Date.now(),
+      },
+    ];
+    activeIncident = null;
     majorIncidentUntil = 0;
     wasMajorIncident = false;
     particles = [];
@@ -1758,6 +2019,10 @@
     els.clickPower.textContent = `+${formatRate(clickPower)} per click`;
 
     renderMajorIncident(sla);
+    renderActiveIncident();
+    renderQueueComposition();
+    renderBuffs();
+    renderTimeline();
     renderOfficeEvolution();
     renderUpgrades();
     renderAchievements();
@@ -1768,6 +2033,27 @@
     const active = sla.label === "Major Incident" || Date.now() < majorIncidentUntil;
     els.deskStage.classList.toggle("major-incident", active);
     els.incidentAlert.setAttribute("aria-hidden", String(!active));
+    const slaClass = `sla-${sla.label.toLowerCase().replace(/\s+/g, "-").replace("major-incident", "major")}`;
+    els.deskStage.classList.remove("sla-calm", "sla-busy", "sla-hot", "sla-major");
+    els.deskStage.classList.add(slaClass);
+
+    const conveyorDurations = {
+      Calm: 16,
+      Busy: 10,
+      Hot: 6.5,
+      "Major Incident": 3.8,
+    };
+    els.ticketConveyor.style.setProperty(
+      "--conveyor-duration",
+      `${conveyorDurations[sla.label] || 12}s`,
+    );
+    els.ticketConveyor.classList.toggle("queue-low", state.openTickets < 25);
+    els.ticketConveyor.classList.toggle(
+      "queue-medium",
+      state.openTickets >= 25 && state.openTickets < 100,
+    );
+    els.ticketConveyor.classList.toggle("queue-high", state.openTickets >= 100);
+    els.ticketConveyor.classList.toggle("is-priority", active);
 
     if (active && !wasMajorIncident && !reduceMotion) {
       els.deskStage.classList.remove("incident-hit");
@@ -1777,6 +2063,146 @@
     }
 
     wasMajorIncident = active;
+  }
+
+  function renderActiveIncident() {
+    const now = Date.now();
+    if (activeIncident && activeIncident.expiresAt <= now) {
+      activeIncident = null;
+    }
+
+    const visible = Boolean(activeIncident);
+    els.activeIncident.setAttribute("aria-hidden", String(!visible));
+    if (!activeIncident) {
+      return;
+    }
+
+    els.activeIncidentCategory.textContent = activeIncident.category;
+    els.activeIncidentText.textContent = activeIncident.label;
+    els.activeIncidentImpact.textContent = `+${formatNumber(activeIncident.amount)} open`;
+  }
+
+  function renderQueueComposition() {
+    const total = Math.max(0, Math.round(state.openTickets));
+    const categoryWeights = [0.24, 0.31, 0.17, 0.13, 0.15];
+    const activeCategory = activeIncident?.category || "";
+    const preferredIndex =
+      activeCategory === "Cybersecurity"
+        ? 3
+        : activeCategory === "Networking"
+          ? 2
+          : activeCategory === "Data Engineering" || activeCategory === "Integration"
+            ? 4
+            : activeCategory
+              ? 1
+              : -1;
+
+    if (preferredIndex >= 0) {
+      categoryWeights[preferredIndex] += 0.2;
+    }
+
+    const weightTotal = categoryWeights.reduce((sum, weight) => sum + weight, 0);
+    const counts = [];
+    let allocated = 0;
+    for (let index = 0; index < queueCategoryDefs.length; index += 1) {
+      const count =
+        index === queueCategoryDefs.length - 1
+          ? Math.max(0, total - allocated)
+          : Math.round(total * (categoryWeights[index] / weightTotal));
+      counts.push(count);
+      allocated += count;
+    }
+
+    const signature = `${total}:${counts.join(",")}`;
+    els.queueCompositionTotal.textContent = `${formatNumber(total)} open`;
+    if (signature === queueRenderSignature) {
+      return;
+    }
+    queueRenderSignature = signature;
+
+    const fragment = document.createDocumentFragment();
+    queueCategoryDefs.forEach((category, index) => {
+      const row = document.createElement("div");
+      row.className = "queue-composition-row";
+
+      const name = document.createElement("span");
+      name.textContent = category.name;
+
+      const track = document.createElement("span");
+      track.className = "queue-composition-track";
+      track.style.setProperty("--queue-color", category.color);
+
+      const fill = document.createElement("span");
+      fill.style.width = `${total ? (counts[index] / total) * 100 : 0}%`;
+      track.append(fill);
+
+      const count = document.createElement("strong");
+      count.textContent = formatNumber(counts[index]);
+      row.append(name, track, count);
+      fragment.append(row);
+    });
+    els.queueCompositionList.replaceChildren(fragment);
+  }
+
+  function renderBuffs() {
+    const now = Date.now();
+    const active = buffDefs
+      .map((buff) => ({
+        ...buff,
+        remaining: Math.max(0, Math.ceil(((state.activeBuffs[buff.id] || 0) - now) / 1000)),
+      }))
+      .filter((buff) => buff.remaining > 0);
+    const signature = active.map((buff) => `${buff.id}:${buff.remaining}`).join("|");
+    if (signature === buffRenderSignature) {
+      return;
+    }
+    buffRenderSignature = signature;
+
+    if (!active.length) {
+      const empty = document.createElement("span");
+      empty.className = "buff-empty";
+      empty.textContent = "No active operational boosts";
+      els.buffStrip.replaceChildren(empty);
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    for (const buff of active) {
+      const pill = document.createElement("span");
+      pill.className = "buff-pill";
+
+      const name = document.createElement("strong");
+      name.textContent = buff.name;
+
+      const description = document.createElement("span");
+      description.textContent = buff.description;
+
+      const time = document.createElement("time");
+      time.textContent = `${buff.remaining}s`;
+      pill.append(name, description, time);
+      fragment.append(pill);
+    }
+    els.buffStrip.replaceChildren(fragment);
+  }
+
+  function renderTimeline() {
+    const signature = timelineEvents
+      .map((event) => `${event.time}:${event.type}:${event.message}`)
+      .join("|");
+    if (signature === timelineRenderSignature) {
+      return;
+    }
+    timelineRenderSignature = signature;
+
+    const fragment = document.createDocumentFragment();
+    for (const event of timelineEvents) {
+      const item = document.createElement("span");
+      item.className = `timeline-event${event.type ? ` ${event.type}` : ""}`;
+      item.textContent = event.message;
+      item.title = event.message;
+      fragment.append(item);
+    }
+    els.timelineList.replaceChildren(fragment);
   }
 
   function renderOfficeEvolution() {
@@ -1793,6 +2219,26 @@
     for (const [className, enabled] of Object.entries(classes)) {
       els.officeEvolution.classList.toggle(className, enabled);
     }
+
+    const propDetails = [
+      ["Coffee Refill Rotation", owned("coffee_refill")],
+      ["Second Monitor", owned("second_monitor")],
+      ["Monitoring Bot", Math.max(owned("monitoring_bot"), owned("auto_triage"))],
+      [
+        "Overnight Patch Window",
+        Math.max(owned("patch_window"), owned("global_noc"), owned("cloud_command_center")),
+      ],
+    ];
+    els.officeProps.forEach((prop, index) => {
+      const [name, level] = propDetails[index];
+      const label = `${name} · Level ${formatNumber(level)}`;
+      prop.dataset.tooltip = label;
+      prop.title = label;
+      const tooltip = prop.querySelector(".office-tooltip");
+      if (tooltip) {
+        tooltip.textContent = label;
+      }
+    });
   }
 
   function renderUpgrades() {
@@ -1834,22 +2280,83 @@
       els.upgradeList.append(fragment);
     }
 
+    let visibleCount = 0;
     for (const upgrade of upgradeDefs) {
       const view = upgradeViews.get(upgrade.id);
-      const cost = getUpgradeCost(upgrade);
+      const purchase = getBulkPurchase(upgrade, buyMode);
       const count = owned(upgrade.id);
+      const affordable = purchase.quantity > 0 && state.resolved >= purchase.cost;
+      const wasAffordable = affordableState.get(upgrade.id);
+      const visible = matchesUpgradeFilter(upgrade, affordable);
 
-      view.button.disabled = state.resolved < cost;
+      view.button.hidden = !visible;
+      if (visible) {
+        visibleCount += 1;
+      }
+      view.button.disabled = !affordable;
       view.button.setAttribute(
         "aria-label",
-        `Buy ${upgrade.name} for ${formatNumber(cost)} tickets`,
+        `Buy ${formatNumber(purchase.quantity || 1)} ${upgrade.name} for ${formatNumber(
+          purchase.cost,
+        )} tickets`,
       );
-      view.costNode.textContent = formatNumber(cost);
+      view.costNode.textContent =
+        buyMode === "1"
+          ? formatNumber(purchase.cost)
+          : `${formatNumber(purchase.cost)} · x${formatNumber(purchase.quantity || 0)}`;
       view.ownedNode.textContent = `Owned ${formatNumber(count)}`;
+
+      if (wasAffordable === false && affordable && !reduceMotion) {
+        view.button.classList.remove("newly-affordable");
+        void view.button.offsetWidth;
+        view.button.classList.add("newly-affordable");
+        window.setTimeout(() => view.button.classList.remove("newly-affordable"), 950);
+      }
+      affordableState.set(upgrade.id, affordable);
     }
+    els.upgradeResultCount.textContent = `${visibleCount} upgrade${visibleCount === 1 ? "" : "s"}`;
+  }
+
+  function matchesUpgradeFilter(upgrade, affordable) {
+    if (upgradeFilter === "affordable") {
+      return affordable;
+    }
+    if (upgradeFilter === "click") {
+      return upgrade.kind.startsWith("click");
+    }
+    if (upgradeFilter === "automation") {
+      return upgrade.kind.startsWith("passive");
+    }
+    if (upgradeFilter === "enterprise") {
+      return upgrade.baseCost >= 1000000;
+    }
+    return true;
   }
 
   function renderAchievements() {
+    const unlockedCount = achievementDefs.filter((achievement) =>
+      Boolean(state.achievements[achievement.id]),
+    ).length;
+    const nextAchievement = achievementDefs.find(
+      (achievement) => !state.achievements[achievement.id],
+    );
+    const nextProgress = nextAchievement ? getAchievementProgress(nextAchievement.id) : 1;
+
+    els.reputationLevel.textContent = `${unlockedCount} of ${achievementDefs.length} achievements`;
+    els.reputationProgressFill.style.width = `${Math.min(100, nextProgress * 100)}%`;
+    els.reputationNext.textContent = nextAchievement
+      ? `Next: ${nextAchievement.name} · ${Math.round(nextProgress * 100)}%`
+      : "All desk reputation milestones unlocked";
+    els.reputationBonus.textContent = `+${Math.round(getAchievementBonus() * 100)}% productivity`;
+
+    const signature = achievementDefs
+      .map((achievement) => `${achievement.id}:${Boolean(state.achievements[achievement.id])}`)
+      .join("|");
+    if (signature === achievementRenderSignature) {
+      return;
+    }
+    achievementRenderSignature = signature;
+
     const fragment = document.createDocumentFragment();
 
     for (const achievement of achievementDefs) {
@@ -1868,6 +2375,39 @@
     }
 
     els.achievementList.replaceChildren(fragment);
+  }
+
+  function getAchievementProgress(achievementId) {
+    const progress = {
+      first_close: state.totalResolved / 1,
+      procurement_started: Object.values(state.upgrades).some((count) => count > 0) ? 1 : 0,
+      queue_tamer: state.totalResolved / 100,
+      first_automation: getTicketsPerSecond() / 10,
+      inbox_zeroish:
+        state.totalResolved < 50
+          ? state.totalResolved / 50
+          : state.openTickets < 1
+            ? 1
+            : Math.max(0.5, 1 - state.openTickets / 200),
+      incident_commander: state.totalResolved / 1000,
+      script_whisperer: owned("auto_triage") / 5,
+      major_release: state.totalResolved / 25000,
+    };
+    return Math.min(1, Math.max(0, progress[achievementId] || 0));
+  }
+
+  function setAchievementDrawerOpen(open) {
+    achievementDrawerOpen = open;
+    els.achievementDrawer.classList.toggle("is-open", open);
+    els.achievementDrawer.setAttribute("aria-hidden", String(!open));
+    els.achievementDrawerButton.setAttribute("aria-expanded", String(open));
+    document.body.classList.toggle("drawer-open", open);
+    if (open) {
+      renderAchievements();
+      window.setTimeout(() => els.achievementDrawerClose.focus(), 0);
+    } else if (document.activeElement === els.achievementDrawerClose) {
+      els.achievementDrawerButton.focus();
+    }
   }
 
   function renderLog() {

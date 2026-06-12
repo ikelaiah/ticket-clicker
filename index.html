@@ -70,6 +70,14 @@
             <span id="heatMeterFill"></span>
           </div>
 
+          <section class="queue-composition" aria-label="Open queue composition">
+            <div class="section-heading">
+              <h3>Queue Composition</h3>
+              <span id="queueCompositionTotal">0 open</span>
+            </div>
+            <div id="queueCompositionList" class="queue-composition-list"></div>
+          </section>
+
           <section class="feed" aria-label="Incident feed">
             <div class="feed-heading">
               <h3>Incident Feed</h3>
@@ -88,11 +96,35 @@
             <span class="incident-light" aria-hidden="true"></span>
           </div>
 
-          <div id="officeEvolution" class="office-evolution" aria-hidden="true">
-            <span class="office-prop prop-coffee"></span>
-            <span class="office-prop prop-monitor"></span>
-            <span class="office-prop prop-bot"></span>
-            <span class="office-prop prop-rack"></span>
+          <div id="activeIncident" class="active-incident-card" aria-live="polite" aria-hidden="true">
+            <span id="activeIncidentCategory">Operations</span>
+            <strong id="activeIncidentText">No active incident</strong>
+            <small id="activeIncidentImpact">Queue stable</small>
+          </div>
+
+          <div id="officeEvolution" class="office-evolution">
+            <span class="office-prop prop-coffee" tabindex="0" role="img" aria-label="Coffee Refill Rotation">
+              <span class="office-tooltip">Coffee Refill Rotation</span>
+            </span>
+            <span class="office-prop prop-monitor" tabindex="0" role="img" aria-label="Second Monitor">
+              <span class="office-tooltip">Second Monitor</span>
+            </span>
+            <span class="office-prop prop-bot" tabindex="0" role="img" aria-label="Monitoring Bot">
+              <span class="office-tooltip">Monitoring Bot</span>
+            </span>
+            <span class="office-prop prop-rack" tabindex="0" role="img" aria-label="Overnight Patch Window">
+              <span class="office-tooltip">Overnight Patch Window</span>
+            </span>
+          </div>
+
+          <div id="ticketConveyor" class="ticket-conveyor" aria-hidden="true">
+            <span class="conveyor-track"></span>
+            <span class="conveyor-ticket"></span>
+            <span class="conveyor-ticket"></span>
+            <span class="conveyor-ticket"></span>
+            <span class="conveyor-ticket"></span>
+            <span class="conveyor-ticket"></span>
+            <span class="conveyor-ticket"></span>
           </div>
 
           <div class="ticket-stream" aria-hidden="true">
@@ -137,6 +169,15 @@
             <span class="click-power" id="clickPowerLabel">+1 per click</span>
           </button>
 
+          <div id="buffStrip" class="buff-strip" aria-label="Active temporary boosts">
+            <span class="buff-empty">No active operational boosts</span>
+          </div>
+
+          <section class="operations-timeline" aria-label="Operations timeline">
+            <div class="timeline-label">Ops Timeline</div>
+            <div id="timelineList" class="timeline-list"></div>
+          </section>
+
           <div id="floatingTextLayer" class="floating-layer" aria-hidden="true"></div>
         </section>
 
@@ -145,17 +186,53 @@
             <span class="panel-kicker">Procurement</span>
             <h2>Upgrades</h2>
           </div>
+          <div class="procurement-toolbar">
+            <div class="segmented-control" aria-label="Purchase quantity">
+              <button class="segment is-active" type="button" data-buy-mode="1" aria-pressed="true">Buy 1</button>
+              <button class="segment" type="button" data-buy-mode="10" aria-pressed="false">Buy 10</button>
+              <button class="segment" type="button" data-buy-mode="max" aria-pressed="false">Buy Max</button>
+            </div>
+            <div class="upgrade-filters" aria-label="Upgrade filters">
+              <button class="filter-chip is-active" type="button" data-upgrade-filter="all" aria-pressed="true">All</button>
+              <button class="filter-chip" type="button" data-upgrade-filter="affordable" aria-pressed="false">Affordable</button>
+              <button class="filter-chip" type="button" data-upgrade-filter="click" aria-pressed="false">Click</button>
+              <button class="filter-chip" type="button" data-upgrade-filter="automation" aria-pressed="false">Automation</button>
+              <button class="filter-chip" type="button" data-upgrade-filter="enterprise" aria-pressed="false">Enterprise</button>
+            </div>
+            <span id="upgradeResultCount" class="upgrade-result-count">59 upgrades</span>
+          </div>
           <div id="upgradeList" class="upgrade-list"></div>
         </aside>
       </main>
 
-      <section class="achievement-band" aria-label="Achievements">
-        <div class="achievement-heading">
-          <span class="panel-kicker">Desk reputation</span>
-          <h2>Achievements</h2>
-        </div>
-        <div id="achievementList" class="achievement-list"></div>
+      <section class="reputation-dock" aria-label="Desk reputation">
+        <button id="achievementDrawerButton" class="reputation-summary" type="button" aria-expanded="false" aria-controls="achievementDrawer">
+          <span>
+            <span class="panel-kicker">Desk reputation</span>
+            <strong id="reputationLevel">0 of 8 achievements</strong>
+          </span>
+          <span class="reputation-progress">
+            <span class="reputation-track"><span id="reputationProgressFill"></span></span>
+            <small id="reputationNext">Next: First Close</small>
+          </span>
+          <span class="reputation-bonus" id="reputationBonus">+0% productivity</span>
+          <span class="drawer-chevron" aria-hidden="true">⌃</span>
+        </button>
       </section>
+
+      <div id="achievementDrawer" class="achievement-drawer" aria-hidden="true">
+        <button id="achievementDrawerBackdrop" class="drawer-backdrop" type="button" aria-label="Close achievements"></button>
+        <section class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="achievementDrawerTitle">
+          <header class="drawer-header">
+            <div>
+              <span class="panel-kicker">Desk reputation</span>
+              <h2 id="achievementDrawerTitle">Achievements</h2>
+            </div>
+            <button id="achievementDrawerClose" class="drawer-close" type="button" aria-label="Close achievements">×</button>
+          </header>
+          <div id="achievementList" class="achievement-list"></div>
+        </section>
+      </div>
     </div>
   </body>
 </html>

@@ -4,9 +4,9 @@ An IT helpdesk clicker game where the queue grows 📈, production misbehaves �
 
 ## 🖱️ Play
 
-Open [`index.html`](index.html) in a modern browser and click **Resolve Ticket**.
+Play the published game at [ikelaiah.github.io/ticket-clicker](https://ikelaiah.github.io/ticket-clicker/) or open [`index.html`](index.html) in a modern browser.
 
-For the best experience, serve the folder locally:
+For local development, serve the folder:
 
 ```powershell
 python -m http.server 5500
@@ -20,7 +20,8 @@ Then visit [http://127.0.0.1:5500](http://127.0.0.1:5500).
 2. 🛒 Buy procurement upgrades to improve click power or automate ticket resolution.
 3. 🌡️ Keep an eye on the open queue and SLA heat.
 4. 🚨 Survive random incidents involving printers, spreadsheets, vendors, production, and management.
-5. 🏆 Unlock achievements for permanent productivity bonuses.
+5. ⚡ Use temporary operational boosts before management notices.
+6. 🏆 Unlock achievements for permanent productivity bonuses.
 
 ## 📊 Dashboard
 
@@ -30,6 +31,14 @@ Then visit [http://127.0.0.1:5500](http://127.0.0.1:5500).
 - 📥 **Open queue:** Incoming work waiting to be resolved.
 - 🔥 **SLA heat:** Current queue pressure.
 - 🚀 **Productivity bonus:** Permanent bonus earned from achievements.
+- 📊 **Queue composition:** Where the current trouble is coming from.
+- 📜 **Ops timeline:** Recent incidents, milestones, purchases, and bug squashes.
+
+## 🛒 Procurement
+
+- Use **Buy 1**, **Buy 10**, or **Buy Max** for faster purchasing.
+- Filter upgrades by affordability, click power, automation, or enterprise-grade budget damage.
+- Newly affordable upgrades briefly highlight without rebuilding the cards under your pointer.
 
 ## 💾 Progress
 
@@ -45,13 +54,16 @@ Progress saves automatically in the browser using `localStorage`.
 - 🛒 59 IT-themed procurement upgrades
 - 🚨 288 random helpdesk incidents
 - 🤖 Passive automation and offline progress
+- ⚡ Temporary boosts that change click power, automation, or incoming queue pressure
 - 🏆 Achievements with productivity bonuses
-- 🚨 Major-incident lighting and alert effects
+- 🗄️ A compact achievement drawer with next-milestone progress
+- 🚨 Categorized active incidents with impact summaries
+- 🎫 An SLA-driven ticket conveyor that becomes increasingly concerned
 - ✅ Animated ticket-resolution stamps
 - 📱 Responsive desktop, landscape, and mobile layouts
 - 🎫 Randomly wandering tickets
 - 🐛 Bonus bugs that roam freely until you squash them
-- 🏢 An office that gains equipment as procurement succeeds
+- 🏢 An office that gains named, inspectable equipment as procurement succeeds
 - 📦 No dependencies or build step
 
 ## 📁 Project Files
