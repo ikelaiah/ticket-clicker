@@ -465,12 +465,10 @@
     },
   ];
 
-  const targetFormat = new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  });
   const formatTarget = (target) =>
-    target >= 1000 ? targetFormat.format(target) : String(target);
+    window.ticketClickerNumberUnits.formatInline(
+      window.ticketClickerNumberUnits.formatParts(target),
+    );
 
   const catalog = [];
   for (let tier = 0; tier < 20; tier += 1) {

@@ -51,8 +51,8 @@ Progress saves automatically in the browser using `localStorage`.
 
 ## ✨ Features
 
-- 🛒 59 IT-themed procurement upgrades
-- 🚨 288 random helpdesk incidents
+- 🛒 500 IT-themed procurement upgrades
+- 🚨 500 random helpdesk incidents
 - 🤖 Passive automation and offline progress
 - ⚡ Temporary boosts that change click power, automation, or incoming queue pressure
 - 🏆 500 emoji desk reputations with productivity bonuses
@@ -70,8 +70,11 @@ Progress saves automatically in the browser using `localStorage`.
 
 - 🖼️ `index.html` contains the game interface.
 - 🎨 `styles.css` contains the responsive layout and animations.
+- 🔢 `numbers.js` formats large values with full short-scale unit names.
 - 🏅 `reputations.js` contains the 492 data-driven reputations added to the 8 core achievements.
-- 🧠 `game.js` contains game balance, incidents, upgrades, saving, and gameplay.
+- 🚨 `incidents.js` contains the expanded real-life incident catalog.
+- 🛒 `procurements.js` contains the expanded procurement catalog and scaling.
+- 🧠 `game.js` contains core balance, saving, and gameplay.
 
 ## 🧨 Resetting Manually
 

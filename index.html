@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Ticket Clicker</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="numbers.js" defer></script>
+    <script src="incidents.js" defer></script>
+    <script src="procurements.js" defer></script>
     <script src="reputations.js" defer></script>
     <script src="game.js" defer></script>
   </head>
@@ -51,11 +54,11 @@
           <div class="metric-list">
             <div class="metric-row">
               <span>Total closed</span>
-              <strong id="totalValue">0</strong>
+              <strong id="totalValue"><span class="number-amount">0</span></strong>
             </div>
             <div class="metric-row">
               <span>Open queue</span>
-              <strong id="queueValue">0</strong>
+              <strong id="queueValue"><span class="number-amount">0</span></strong>
             </div>
             <div class="metric-row">
               <span>SLA heat</span>
@@ -148,7 +151,7 @@
             <span class="ticket-scoreboard">
               <span class="ticket-score">
                 <small>Resolved tickets</small>
-                <strong id="resolvedValue">0</strong>
+                <strong id="resolvedValue"><span class="number-amount">0</span></strong>
               </span>
             </span>
             <span class="ticket-art" aria-hidden="true">
@@ -165,9 +168,12 @@
             <span class="click-label">Resolve Ticket</span>
             <span class="ticket-rate">
               <small>Tickets per second</small>
-              <strong id="tpsValue">0</strong>
+              <strong id="tpsValue"><span class="number-amount">0</span></strong>
             </span>
-            <span class="click-power" id="clickPowerLabel">+1 per click</span>
+            <span class="click-power" id="clickPowerLabel">
+              <span class="number-amount">+1</span>
+              <small class="number-unit">ticket per click</small>
+            </span>
           </button>
 
           <div id="buffStrip" class="buff-strip" aria-label="Active temporary boosts">
@@ -200,7 +206,7 @@
               <button class="filter-chip" type="button" data-upgrade-filter="automation" aria-pressed="false">Automation</button>
               <button class="filter-chip" type="button" data-upgrade-filter="enterprise" aria-pressed="false">Enterprise</button>
             </div>
-            <span id="upgradeResultCount" class="upgrade-result-count">59 upgrades</span>
+            <span id="upgradeResultCount" class="upgrade-result-count">500 upgrades</span>
           </div>
           <div id="upgradeList" class="upgrade-list"></div>
         </aside>

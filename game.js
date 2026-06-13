@@ -2,8 +2,9 @@
   const STORAGE_KEY = "ticket-clicker-state-v1";
   const MAX_OFFLINE_SECONDS = 60 * 60 * 8;
   const PRIMARY_COMPACT_THRESHOLD = 1000000000000000;
+  const numberUnits = window.ticketClickerNumberUnits;
 
-  const upgradeDefs = [
+  const coreUpgradeDefs = [
     {
       id: "sticky_notes",
       name: "Color-Coded Sticky Notes",
@@ -537,6 +538,11 @@
     },
   ];
 
+  const upgradeDefs = [
+    ...coreUpgradeDefs,
+    ...(window.ticketClickerProcurementCatalog || []),
+  ];
+
   const coreAchievementDefs = [
     {
       id: "first_close",
@@ -833,6 +839,7 @@
 
   const incidentDefs = [
     ...realLifeIncidentDefs,
+    ...(window.ticketClickerIncidentCatalog || []),
     {
       label: "A printer spooler made a comeback. Nobody invited it.",
       amount: 12,
@@ -1313,20 +1320,6 @@
     { id: "security", name: "Security", color: "#e05d5d" },
     { id: "data", name: "Data", color: "#b58ad8" },
   ];
-
-  const numberFormat = new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  });
-  const compactFormat = new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 2,
-  });
-  const primaryNumberFormat = new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  });
-  const primaryRateFormat = new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 1,
-  });
 
   const els = {
     resolved: document.getElementById("resolvedValue"),
@@ -2115,15 +2108,22 @@
     const tps = getTicketsPerSecond();
     const sla = getSlaStatus();
 
-    setPrimaryMetric(els.resolved, formatPrimaryNumber(state.resolved));
-    els.total.textContent = formatNumber(state.totalResolved);
-    setPrimaryMetric(els.tps, formatPrimaryRate(tps));
-    els.queue.textContent = formatNumber(state.openTickets);
+    setStackedNumber(els.resolved, formatPrimaryNumberParts(state.resolved), {
+      primary: true,
+    });
+    setStackedNumber(els.total, formatNumberParts(state.totalResolved));
+    setStackedNumber(els.tps, formatPrimaryRateParts(tps), {
+      primary: true,
+    });
+    setStackedNumber(els.queue, formatNumberParts(state.openTickets));
     els.sla.textContent = sla.label;
     els.bonus.textContent = `${Math.round(getAchievementBonus() * 100)}%`;
     els.heatMeter.style.width = `${Math.min(100, Math.max(8, sla.width))}%`;
     els.heatMeter.style.background = sla.color;
-    els.clickPower.textContent = `+${formatRate(clickPower)} per click`;
+    setStackedNumber(els.clickPower, formatRateParts(clickPower), {
+      prefix: "+",
+      unitSuffix: `${clickPower === 1 ? "ticket" : "tickets"} per click`,
+    });
 
     renderMajorIncident(sla);
     renderActiveIncident();
@@ -2186,7 +2186,14 @@
 
     els.activeIncidentCategory.textContent = activeIncident.category;
     els.activeIncidentText.textContent = activeIncident.label;
-    els.activeIncidentImpact.textContent = `+${formatNumber(activeIncident.amount)} open`;
+    setStackedNumber(
+      els.activeIncidentImpact,
+      formatNumberParts(activeIncident.amount),
+      {
+        prefix: "+",
+        unitSuffix: "open tickets",
+      },
+    );
   }
 
   function renderQueueComposition() {
@@ -2221,7 +2228,9 @@
     }
 
     const signature = `${total}:${counts.join(",")}`;
-    els.queueCompositionTotal.textContent = `${formatNumber(total)} open`;
+    setStackedNumber(els.queueCompositionTotal, formatNumberParts(total), {
+      unitSuffix: "open tickets",
+    });
     if (signature === queueRenderSignature) {
       return;
     }
@@ -2244,7 +2253,7 @@
       track.append(fill);
 
       const count = document.createElement("strong");
-      count.textContent = formatNumber(counts[index]);
+      setStackedNumber(count, formatNumberParts(counts[index]));
       row.append(name, track, count);
       fragment.append(row);
     });
@@ -2407,11 +2416,16 @@
           purchase.cost,
         )} tickets`,
       );
-      view.costNode.textContent =
-        buyMode === "1"
-          ? formatNumber(purchase.cost)
-          : `${formatNumber(purchase.cost)} · x${formatNumber(purchase.quantity || 0)}`;
-      view.ownedNode.textContent = `Owned ${formatNumber(count)}`;
+      setStackedNumber(view.costNode, formatNumberParts(purchase.cost), {
+        unitSuffix: "tickets",
+        detail:
+          buyMode === "1"
+            ? ""
+            : `Buy ${formatNumber(purchase.quantity || 0)}`,
+      });
+      setStackedNumber(view.ownedNode, formatNumberParts(count), {
+        unitSuffix: "owned",
+      });
 
       if (wasAffordable === false && affordable && !reduceMotion) {
         view.button.classList.remove("newly-affordable");
@@ -2568,45 +2582,86 @@
   }
 
   function formatNumber(value) {
-    const clean = Math.max(0, cleanNumber(value));
-    if (clean < 1000) {
-      if (clean < 10 && clean % 1 !== 0) {
-        return clean.toFixed(1);
-      }
-      return numberFormat.format(Math.floor(clean));
-    }
+    return numberUnits.formatInline(formatNumberParts(value));
+  }
 
-    return compactFormat.format(clean);
+  function formatNumberParts(value) {
+    return numberUnits.formatParts(value, {
+      floorExact: true,
+      smallDecimal: true,
+    });
   }
 
   function formatRate(value) {
+    return numberUnits.formatInline(formatRateParts(value));
+  }
+
+  function formatRateParts(value) {
     const clean = Math.max(0, cleanNumber(value));
     if (clean < 100) {
-      return clean.toFixed(1).replace(/\.0$/, "");
+      return numberUnits.formatParts(clean, {
+        compactAt: 100,
+        maximumFractionDigits: 1,
+      });
     }
-    return formatNumber(clean);
+    return formatNumberParts(clean);
   }
 
-  function formatPrimaryNumber(value) {
-    const clean = Math.max(0, cleanNumber(value));
-    if (clean < PRIMARY_COMPACT_THRESHOLD) {
-      return primaryNumberFormat.format(Math.floor(clean));
-    }
-    return compactFormat.format(clean);
+  function formatPrimaryNumberParts(value) {
+    return numberUnits.formatParts(value, {
+      compactAt: PRIMARY_COMPACT_THRESHOLD,
+      floorExact: true,
+    });
   }
 
-  function formatPrimaryRate(value) {
-    const clean = Math.max(0, cleanNumber(value));
-    if (clean < PRIMARY_COMPACT_THRESHOLD) {
-      return primaryRateFormat.format(clean);
-    }
-    return compactFormat.format(clean);
+  function formatPrimaryRateParts(value) {
+    return numberUnits.formatParts(value, {
+      compactAt: PRIMARY_COMPACT_THRESHOLD,
+      maximumFractionDigits: 1,
+    });
   }
 
-  function setPrimaryMetric(element, text) {
-    element.textContent = text;
-    element.classList.toggle("primary-value-long", text.length > 9);
-    element.classList.toggle("primary-value-extra-long", text.length > 12);
+  function setStackedNumber(element, parts, options = {}) {
+    const unitText = [parts.unit, options.unitSuffix]
+      .filter(Boolean)
+      .join(" ");
+    const signature = [
+      options.prefix || "",
+      parts.number,
+      unitText,
+      options.detail || "",
+    ].join("|");
+
+    if (options.primary) {
+      element.classList.toggle("primary-value-long", parts.number.length > 9);
+      element.classList.toggle("primary-value-extra-long", parts.number.length > 12);
+    }
+    if (element.dataset.numberSignature === signature) {
+      return;
+    }
+    element.dataset.numberSignature = signature;
+
+    const amount = document.createElement("span");
+    amount.className = "number-amount";
+    amount.textContent = `${options.prefix || ""}${parts.number}`;
+
+    const children = [amount];
+    if (unitText) {
+      const unit = document.createElement("small");
+      unit.className = "number-unit";
+      unit.textContent = unitText;
+      children.push(unit);
+    }
+    if (options.detail) {
+      const detail = document.createElement("small");
+      detail.className = "number-detail";
+      detail.textContent = options.detail;
+      children.push(detail);
+    }
+
+    element.replaceChildren(...children);
+    const spokenValue = [amount.textContent, unitText].filter(Boolean).join(" ");
+    element.setAttribute("aria-label", spokenValue);
   }
 
   function randomBetween(min, max) {

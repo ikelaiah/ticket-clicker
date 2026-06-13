@@ -260,10 +260,42 @@ p {
 }
 
 .metric-row strong {
+  display: grid;
   min-width: 0;
+  justify-items: end;
   color: var(--text);
   text-align: right;
   overflow-wrap: anywhere;
+}
+
+.number-amount,
+.number-unit {
+  display: block;
+  max-width: 100%;
+}
+
+.number-amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.number-unit {
+  margin-top: 3px;
+  color: var(--soft);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  text-transform: lowercase;
+  white-space: normal;
+}
+
+.number-detail {
+  display: block;
+  margin-top: 3px;
+  color: var(--soft);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.15;
 }
 
 .heat-meter {
@@ -741,14 +773,25 @@ p {
 }
 
 .ticket-score strong {
-  display: block;
+  display: grid;
   width: 100%;
   margin-top: 5px;
+  justify-items: center;
   color: var(--paper);
   font-size: clamp(2rem, 1.4rem + 1.8vw, 3.8rem);
   font-variant-numeric: tabular-nums;
   line-height: 0.95;
   white-space: nowrap;
+}
+
+.ticket-score .number-unit {
+  max-width: 100%;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: clamp(0.64rem, 0.58rem + 0.18vw, 0.82rem);
+  line-height: 1.1;
+  text-transform: lowercase;
+  white-space: normal;
 }
 
 .ticket-score strong.primary-value-long {
@@ -914,11 +957,21 @@ p {
 }
 
 .ticket-rate strong {
+  display: grid;
   min-width: 0;
+  justify-items: center;
   font-size: clamp(1rem, 0.88rem + 0.45vw, 1.4rem);
   font-variant-numeric: tabular-nums;
   line-height: 1;
   white-space: nowrap;
+}
+
+.ticket-rate .number-unit {
+  margin-top: 3px;
+  color: var(--teal);
+  font-size: clamp(0.56rem, 0.52rem + 0.1vw, 0.68rem);
+  text-transform: lowercase;
+  white-space: normal;
 }
 
 .ticket-rate strong.primary-value-long {
@@ -930,12 +983,28 @@ p {
 }
 
 .click-power {
+  display: grid;
+  justify-items: center;
   color: var(--amber);
   font-size: clamp(0.72rem, 0.66rem + 0.15vw, 0.88rem);
   font-weight: 800;
   letter-spacing: 0.06em;
   text-align: center;
   text-transform: uppercase;
+}
+
+.click-power .number-amount {
+  font-size: clamp(0.9rem, 0.8rem + 0.24vw, 1.1rem);
+}
+
+.click-power .number-unit {
+  max-width: 100%;
+  margin-top: 3px;
+  color: var(--amber);
+  font-size: clamp(0.56rem, 0.52rem + 0.1vw, 0.68rem);
+  letter-spacing: 0;
+  line-height: 1.15;
+  text-transform: lowercase;
 }
 
 .floating-layer {
@@ -1015,19 +1084,29 @@ p {
   display: grid;
   align-content: space-between;
   justify-items: end;
-  min-width: 96px;
+  min-width: 116px;
   color: var(--muted);
   font-size: 0.82rem;
   text-align: right;
 }
 
 .upgrade-cost {
+  display: grid;
+  justify-items: end;
   color: var(--amber);
   font-weight: 900;
 }
 
 .upgrade-owned {
+  display: grid;
+  justify-items: end;
   color: var(--soft);
+}
+
+.upgrade-cost .number-unit,
+.upgrade-owned .number-unit {
+  max-width: 116px;
+  text-align: right;
 }
 
 .achievement-list {
