@@ -55,7 +55,7 @@ Progress saves automatically in the browser using `localStorage`.
 - 🚨 288 random helpdesk incidents
 - 🤖 Passive automation and offline progress
 - ⚡ Temporary boosts that change click power, automation, or incoming queue pressure
-- 🏆 Achievements with productivity bonuses
+- 🏆 500 emoji desk reputations with productivity bonuses
 - 🗄️ A compact achievement drawer with next-milestone progress
 - 🚨 Categorized active incidents with impact summaries
 - 🎫 An SLA-driven ticket conveyor that becomes increasingly concerned
@@ -70,6 +70,7 @@ Progress saves automatically in the browser using `localStorage`.
 
 - 🖼️ `index.html` contains the game interface.
 - 🎨 `styles.css` contains the responsive layout and animations.
+- 🏅 `reputations.js` contains the 492 data-driven reputations added to the 8 core achievements.
 - 🧠 `game.js` contains game balance, incidents, upgrades, saving, and gameplay.
 
 ## 🧨 Resetting Manually

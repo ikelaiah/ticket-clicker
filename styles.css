@@ -1037,7 +1037,11 @@ p {
 }
 
 .achievement {
+  display: grid;
   min-height: 84px;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -1056,12 +1060,45 @@ p {
   line-height: 1.2;
 }
 
-.achievement span {
+.achievement-description {
   display: block;
   margin-top: 5px;
   color: var(--muted);
   font-size: 0.78rem;
   line-height: 1.25;
+}
+
+.achievement-badge {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #151817;
+  font-size: 1.25rem;
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+.achievement.unlocked .achievement-badge {
+  border-color: rgba(242, 193, 78, 0.5);
+  background: rgba(242, 193, 78, 0.08);
+  filter: none;
+  opacity: 1;
+}
+
+.achievement-copy {
+  min-width: 0;
+}
+
+.achievement-category {
+  display: block;
+  margin-top: 7px;
+  color: var(--soft);
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 @keyframes float-pop {
@@ -2074,6 +2111,38 @@ body.drawer-open {
   margin-bottom: 14px;
 }
 
+.drawer-sticky-header {
+  position: sticky;
+  top: -18px;
+  z-index: 4;
+  margin: -18px -18px 12px;
+  padding: 18px 18px 0;
+  border-bottom: 1px solid var(--line);
+  background: #171b19;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+}
+
+.achievement-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 0 12px;
+}
+
+.achievement-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.achievement-result-count {
+  flex: 0 0 auto;
+  color: var(--soft);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
 .drawer-header h2 {
   margin: 2px 0 0;
   font-size: 1.2rem;
@@ -2104,7 +2173,7 @@ body.drawer-open {
 }
 
 .drawer-panel .achievement {
-  min-height: 92px;
+  min-height: 112px;
 }
 
 @keyframes conveyor-ticket-move {
@@ -2266,6 +2335,11 @@ body.drawer-open {
 
   .drawer-panel .achievement-list {
     grid-template-columns: repeat(2, minmax(130px, 1fr));
+  }
+
+  .achievement-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

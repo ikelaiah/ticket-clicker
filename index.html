@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Ticket Clicker</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="reputations.js" defer></script>
     <script src="game.js" defer></script>
   </head>
   <body>
@@ -209,7 +210,7 @@
         <button id="achievementDrawerButton" class="reputation-summary" type="button" aria-expanded="false" aria-controls="achievementDrawer">
           <span>
             <span class="panel-kicker">Desk reputation</span>
-            <strong id="reputationLevel">0 of 8 achievements</strong>
+            <strong id="reputationLevel">0 of 500 achievements</strong>
           </span>
           <span class="reputation-progress">
             <span class="reputation-track"><span id="reputationProgressFill"></span></span>
@@ -223,13 +224,26 @@
       <div id="achievementDrawer" class="achievement-drawer" aria-hidden="true">
         <button id="achievementDrawerBackdrop" class="drawer-backdrop" type="button" aria-label="Close achievements"></button>
         <section class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="achievementDrawerTitle">
-          <header class="drawer-header">
-            <div>
-              <span class="panel-kicker">Desk reputation</span>
-              <h2 id="achievementDrawerTitle">Achievements</h2>
+          <div class="drawer-sticky-header">
+            <header class="drawer-header">
+              <div>
+                <span class="panel-kicker">Desk reputation</span>
+                <h2 id="achievementDrawerTitle">Achievements</h2>
+              </div>
+              <button id="achievementDrawerClose" class="drawer-close" type="button" aria-label="Close achievements">×</button>
+            </header>
+            <div class="achievement-toolbar">
+              <div class="achievement-filters" aria-label="Achievement filters">
+                <button class="filter-chip is-active" type="button" data-achievement-filter="all" aria-pressed="true">All</button>
+                <button class="filter-chip" type="button" data-achievement-filter="tickets" aria-pressed="false">Tickets</button>
+                <button class="filter-chip" type="button" data-achievement-filter="clicking" aria-pressed="false">Clicking</button>
+                <button class="filter-chip" type="button" data-achievement-filter="automation" aria-pressed="false">Automation</button>
+                <button class="filter-chip" type="button" data-achievement-filter="procurement" aria-pressed="false">Procurement</button>
+                <button class="filter-chip" type="button" data-achievement-filter="operations" aria-pressed="false">Operations</button>
+              </div>
+              <span id="achievementResultCount" class="achievement-result-count">500 reputations</span>
             </div>
-            <button id="achievementDrawerClose" class="drawer-close" type="button" aria-label="Close achievements">×</button>
-          </header>
+          </div>
           <div id="achievementList" class="achievement-list"></div>
         </section>
       </div>

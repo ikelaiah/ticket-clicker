@@ -537,56 +537,79 @@
     },
   ];
 
-  const achievementDefs = [
+  const coreAchievementDefs = [
     {
       id: "first_close",
+      emoji: "🎫",
       name: "First Close",
       description: "Resolve 1 ticket.",
+      category: "tickets",
       isUnlocked: () => state.totalResolved >= 1,
     },
     {
       id: "procurement_started",
+      emoji: "🛒",
       name: "Procurement Started",
       description: "Buy your first upgrade.",
+      category: "procurement",
       isUnlocked: () => Object.values(state.upgrades).some((count) => count > 0),
     },
     {
       id: "queue_tamer",
+      emoji: "🏅",
       name: "Queue Tamer",
       description: "Resolve 100 total tickets.",
+      category: "tickets",
       isUnlocked: () => state.totalResolved >= 100,
     },
     {
       id: "first_automation",
+      emoji: "🤖",
       name: "First Automation",
       description: "Reach 10 tickets per second.",
+      category: "automation",
       isUnlocked: () => getTicketsPerSecond() >= 10,
     },
     {
       id: "inbox_zeroish",
+      emoji: "📭",
       name: "Inbox Zero-ish",
       description: "Clear the open queue after closing 50 tickets.",
+      category: "operations",
       isUnlocked: () => state.totalResolved >= 50 && state.openTickets < 1,
     },
     {
       id: "incident_commander",
+      emoji: "🚨",
       name: "Incident Commander",
       description: "Resolve 1,000 total tickets.",
+      category: "tickets",
       isUnlocked: () => state.totalResolved >= 1000,
     },
     {
       id: "script_whisperer",
+      emoji: "📜",
       name: "Script Whisperer",
       description: "Own 5 auto-triage scripts.",
+      category: "automation",
       isUnlocked: () => owned("auto_triage") >= 5,
     },
     {
       id: "major_release",
+      emoji: "🏆",
       name: "Major Release",
       description: "Resolve 25,000 total tickets.",
+      category: "tickets",
       isUnlocked: () => state.totalResolved >= 25000,
     },
   ];
+  const catalogAchievementDefs = (window.ticketClickerReputationCatalog || []).map(
+    (achievement) => ({
+      ...achievement,
+      isUnlocked: () => getAchievementMetric(achievement.metric) >= achievement.target,
+    }),
+  );
+  const achievementDefs = [...coreAchievementDefs, ...catalogAchievementDefs];
 
   const realLifeIncidentDefs = [
     // Cybersecurity (23)
@@ -1335,6 +1358,8 @@
     achievementDrawerButton: document.getElementById("achievementDrawerButton"),
     achievementDrawerBackdrop: document.getElementById("achievementDrawerBackdrop"),
     achievementDrawerClose: document.getElementById("achievementDrawerClose"),
+    achievementFilterButtons: [...document.querySelectorAll("[data-achievement-filter]")],
+    achievementResultCount: document.getElementById("achievementResultCount"),
     reputationLevel: document.getElementById("reputationLevel"),
     reputationProgressFill: document.getElementById("reputationProgressFill"),
     reputationNext: document.getElementById("reputationNext"),
@@ -1370,6 +1395,7 @@
   let activeIncident = null;
   let buyMode = "1";
   let upgradeFilter = "all";
+  let achievementFilter = "all";
   let achievementDrawerOpen = false;
   let achievementRenderSignature = "";
   let queueRenderSignature = "";
@@ -1408,6 +1434,9 @@
   );
   els.achievementDrawerBackdrop.addEventListener("click", () => setAchievementDrawerOpen(false));
   els.achievementDrawerClose.addEventListener("click", () => setAchievementDrawerOpen(false));
+  els.achievementFilterButtons.forEach((button) =>
+    button.addEventListener("click", handleAchievementFilterChange),
+  );
   els.saveButton.addEventListener("click", () => saveState(true));
   els.resetButton.addEventListener("click", resetGame);
   window.addEventListener("resize", handleResize);
@@ -1426,6 +1455,11 @@
       totalSpent: 0,
       openTickets: 24,
       manualClicks: 0,
+      incidentsTriggered: 0,
+      bugsSquashed: 0,
+      buffsActivated: 0,
+      queueClears: 0,
+      maxOpenTickets: 24,
       upgrades: Object.fromEntries(upgradeDefs.map((upgrade) => [upgrade.id, 0])),
       achievements: {},
       log: [],
@@ -1469,6 +1503,14 @@
       merged.totalSpent = cleanNumber(merged.totalSpent);
       merged.openTickets = Math.max(0, cleanNumber(merged.openTickets));
       merged.manualClicks = Math.max(0, cleanNumber(merged.manualClicks));
+      merged.incidentsTriggered = Math.max(0, Math.floor(cleanNumber(merged.incidentsTriggered)));
+      merged.bugsSquashed = Math.max(0, Math.floor(cleanNumber(merged.bugsSquashed)));
+      merged.buffsActivated = Math.max(0, Math.floor(cleanNumber(merged.buffsActivated)));
+      merged.queueClears = Math.max(0, Math.floor(cleanNumber(merged.queueClears)));
+      merged.maxOpenTickets = Math.max(
+        merged.openTickets,
+        cleanNumber(merged.maxOpenTickets),
+      );
       merged.lastSave = Number.isFinite(merged.lastSave) ? merged.lastSave : Date.now();
       merged.nextIncidentAt = Number.isFinite(merged.nextIncidentAt)
         ? merged.nextIncidentAt
@@ -1532,6 +1574,7 @@
   function tick(delta) {
     const incoming = getIncomingRate() * delta;
     state.openTickets += incoming;
+    trackQueuePeak();
 
     const passive = getTicketsPerSecond() * delta;
     if (passive > 0) {
@@ -1581,6 +1624,7 @@
     const bonus = Math.max(5, getClickPower() * 8 + getTicketsPerSecond() * 0.5);
 
     addResolved(bonus);
+    state.bugsSquashed += 1;
     spawnBurst(point.x, point.y, bonus);
     showFloatingText(point.x, point.y, `BUG BONUS +${formatNumber(bonus)}`);
     addTimelineEvent(`Bug squashed: +${formatNumber(bonus)}`, "success");
@@ -1649,6 +1693,17 @@
     renderUpgrades();
   }
 
+  function handleAchievementFilterChange(event) {
+    achievementFilter = event.currentTarget.dataset.achievementFilter || "all";
+    for (const button of els.achievementFilterButtons) {
+      const active = button.dataset.achievementFilter === achievementFilter;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    }
+    achievementRenderSignature = "";
+    renderAchievements();
+  }
+
   function buyUpgrade(upgradeId) {
     const upgrade = upgradeDefs.find((item) => item.id === upgradeId);
     if (!upgrade) {
@@ -1673,9 +1728,17 @@
   }
 
   function addResolved(amount) {
+    const previousQueue = state.openTickets;
     state.resolved += amount;
     state.totalResolved += amount;
     state.openTickets = Math.max(0, state.openTickets - amount);
+    if (previousQueue >= 1 && state.openTickets < 1) {
+      state.queueClears += 1;
+    }
+  }
+
+  function trackQueuePeak() {
+    state.maxOpenTickets = Math.max(state.maxOpenTickets, state.openTickets);
   }
 
   function owned(upgradeId) {
@@ -1743,6 +1806,46 @@
     }
 
     return { quantity, cost };
+  }
+
+  function getAchievementMetric(metric) {
+    if (metric === "resolved") {
+      return state.totalResolved;
+    }
+    if (metric === "manualClicks") {
+      return state.manualClicks;
+    }
+    if (metric === "tps") {
+      return getTicketsPerSecond();
+    }
+    if (metric === "clickPower") {
+      return getClickPower();
+    }
+    if (metric === "upgradesOwned") {
+      return Object.values(state.upgrades).reduce((total, count) => total + count, 0);
+    }
+    if (metric === "distinctUpgrades") {
+      return Object.values(state.upgrades).filter((count) => count > 0).length;
+    }
+    if (metric === "spent") {
+      return state.totalSpent;
+    }
+    if (metric === "incidentsTriggered") {
+      return state.incidentsTriggered;
+    }
+    if (metric === "bugsSquashed") {
+      return state.bugsSquashed;
+    }
+    if (metric === "buffsActivated") {
+      return state.buffsActivated;
+    }
+    if (metric === "queueClears") {
+      return state.queueClears;
+    }
+    if (metric === "maxOpenTickets") {
+      return state.maxOpenTickets;
+    }
+    return 0;
   }
 
   function getAchievementBonus() {
@@ -1822,6 +1925,7 @@
     const available = buffDefs.filter((buff) => !state.activeBuffs[buff.id]);
     const buff = available[Math.floor(Math.random() * available.length)] || buffDefs[0];
     state.activeBuffs[buff.id] = now + buff.duration;
+    state.buffsActivated += 1;
     state.nextBuffAt = now + randomBetween(65000, 110000);
     addLog(`Temporary boost: ${buff.name}. ${buff.description}.`, "success");
   }
@@ -1869,6 +1973,8 @@
     const amount = Math.round(incident.amount * pressureScale);
 
     state.openTickets += amount;
+    state.incidentsTriggered += 1;
+    trackQueuePeak();
     state.lastIncidentLabel = incident.label;
     state.nextIncidentAt = Date.now() + randomBetween(30000, 70000);
     activeIncident = {
@@ -1914,7 +2020,7 @@
     for (const achievement of achievementDefs) {
       if (!state.achievements[achievement.id] && achievement.isUnlocked()) {
         state.achievements[achievement.id] = Date.now();
-        addLog(`Achievement unlocked: ${achievement.name}.`, "success");
+        addLog(`Achievement unlocked: ${achievement.emoji} ${achievement.name}.`, "success");
       }
     }
   }
@@ -1950,6 +2056,7 @@
     const earned = passive * secondsAway * 0.65;
     const incoming = getIncomingRate() * secondsAway;
     state.openTickets += incoming;
+    trackQueuePeak();
     addResolved(earned);
     addLog(`Offline automation closed ${formatNumber(earned)} tickets.`, "success");
     state.lastSave = Date.now();
@@ -2349,7 +2456,7 @@
       : "All desk reputation milestones unlocked";
     els.reputationBonus.textContent = `+${Math.round(getAchievementBonus() * 100)}% productivity`;
 
-    const signature = achievementDefs
+    const signature = `${achievementFilter}:` + achievementDefs
       .map((achievement) => `${achievement.id}:${Boolean(state.achievements[achievement.id])}`)
       .join("|");
     if (signature === achievementRenderSignature) {
@@ -2358,26 +2465,63 @@
     achievementRenderSignature = signature;
 
     const fragment = document.createDocumentFragment();
+    let visibleCount = 0;
 
     for (const achievement of achievementDefs) {
+      if (
+        achievementFilter !== "all" &&
+        achievement.category !== achievementFilter
+      ) {
+        continue;
+      }
+      visibleCount += 1;
       const unlocked = Boolean(state.achievements[achievement.id]);
       const item = document.createElement("div");
       item.className = `achievement${unlocked ? " unlocked" : ""}`;
 
+      const badge = document.createElement("span");
+      badge.className = "achievement-badge";
+      badge.textContent = achievement.emoji || "🏅";
+      badge.setAttribute("aria-hidden", "true");
+
+      const copy = document.createElement("div");
+      copy.className = "achievement-copy";
+
       const name = document.createElement("strong");
-      name.textContent = unlocked ? achievement.name : "Locked";
+      name.textContent = unlocked ? achievement.name : "Locked reputation";
 
       const description = document.createElement("span");
+      description.className = "achievement-description";
       description.textContent = achievement.description;
 
-      item.append(name, description);
+      const category = document.createElement("small");
+      category.className = "achievement-category";
+      category.textContent = achievement.category;
+
+      copy.append(name, description, category);
+      item.append(badge, copy);
       fragment.append(item);
     }
 
+    els.achievementResultCount.textContent =
+      `${visibleCount} reputation${visibleCount === 1 ? "" : "s"}`;
     els.achievementList.replaceChildren(fragment);
   }
 
   function getAchievementProgress(achievementId) {
+    const catalogAchievement = catalogAchievementDefs.find(
+      (achievement) => achievement.id === achievementId,
+    );
+    if (catalogAchievement) {
+      return Math.min(
+        1,
+        Math.max(
+          0,
+          getAchievementMetric(catalogAchievement.metric) / catalogAchievement.target,
+        ),
+      );
+    }
+
     const progress = {
       first_close: state.totalResolved / 1,
       procurement_started: Object.values(state.upgrades).some((count) => count > 0) ? 1 : 0,
