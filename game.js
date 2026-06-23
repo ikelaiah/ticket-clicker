@@ -1971,7 +1971,7 @@
     state.lastIncidentLabel = incident.label;
     state.nextIncidentAt = Date.now() + randomBetween(30000, 70000);
     activeIncident = {
-      category: classifyIncident(incident.label),
+      category: incident.category || classifyIncident(incident.label),
       label: incident.label,
       amount,
       expiresAt: Date.now() + 12000,
@@ -1985,6 +1985,10 @@
   function classifyIncident(label) {
     const text = label.toLowerCase();
     const rules = [
+      ["Education Apps", /edumate|enrolhq|enrolment|school-tour|student|guardian|parent portal/],
+      ["Payroll & Billing", /payroll|salary|overtime|superannuation|billing|invoice|gst|credit note|payment|bank file/],
+      ["Messaging", /smsglobal|sms |sender id|delivery receipt|mobile numbers|outlook|teams|mailbox|email/],
+      ["Browsers", /browser|chrome|edge|internet explorer|cookies|cache|pop-up|downloads folder|browser zoom/],
       ["Cybersecurity", /phish|security|mfa|password|firewall|ransom|vulnerab|certificate|soc|siem|secret|access/],
       ["Networking", /network|wi-fi|wifi|dns|dhcp|router|switch|vlan|vpn|proxy|latency|packet|port 443/],
       ["Windows", /windows|active directory|group policy|registry|powershell|domain controller|bitlocker/],
