@@ -2447,10 +2447,13 @@
       return affordable;
     }
     if (upgradeFilter === "click") {
-      return upgrade.kind.startsWith("click");
+      return upgrade.kind === "click-flat";
     }
     if (upgradeFilter === "automation") {
-      return upgrade.kind.startsWith("passive");
+      return upgrade.kind === "passive-flat";
+    }
+    if (upgradeFilter === "boosters") {
+      return upgrade.kind.endsWith("mult");
     }
     if (upgradeFilter === "enterprise") {
       return upgrade.baseCost >= 1000000;
