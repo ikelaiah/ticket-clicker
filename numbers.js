@@ -36,9 +36,7 @@
     "duotrigintillion",
   ];
 
-  const scaledNumberFormat = new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 2,
-  });
+  const scaledFormats = new Map();
   const exactFormats = new Map();
 
   function clean(value) {
@@ -56,7 +54,47 @@
     return exactFormats.get(maximumFractionDigits);
   }
 
-  function formatScaledParts(value) {
+  function getScaledFormat(minimumFractionDigits, maximumFractionDigits) {
+    const key = `${minimumFractionDigits}:${maximumFractionDigits}`;
+    if (!scaledFormats.has(key)) {
+      scaledFormats.set(
+        key,
+        new Intl.NumberFormat("en-US", {
+          minimumFractionDigits,
+          maximumFractionDigits,
+        }),
+      );
+    }
+    return scaledFormats.get(key);
+  }
+
+  function groupScaledFraction(number) {
+    const [whole, fraction = ""] = number.split(".");
+    if (fraction.length <= 3) {
+      return { number };
+    }
+
+    const numberLead = `${whole}.${fraction.slice(0, 3)}`;
+    const numberTail = fraction.slice(3);
+    return {
+      number: `${numberLead} ${numberTail}`,
+      numberLead,
+      numberTail,
+      spokenNumber: `${numberLead}${numberTail}`,
+    };
+  }
+
+  function formatScaledParts(value, options) {
+    const maximumFractionDigits =
+      options.compactMaximumFractionDigits ?? 2;
+    const minimumFractionDigits = Math.min(
+      maximumFractionDigits,
+      options.compactMinimumFractionDigits ?? 0,
+    );
+    const scaledNumberFormat = getScaledFormat(
+      minimumFractionDigits,
+      maximumFractionDigits,
+    );
     let unitIndex = Math.floor(Math.log10(value) / 3);
 
     if (unitIndex >= unitNames.length) {
@@ -69,14 +107,20 @@
     }
 
     let scaled = value / 10 ** (unitIndex * 3);
-    const rounded = Math.round(scaled * 100) / 100;
+    const precision = 10 ** maximumFractionDigits;
+    const rounded = Math.round(scaled * precision) / precision;
     if (rounded >= 1000 && unitIndex + 1 < unitNames.length) {
       unitIndex += 1;
       scaled = value / 10 ** (unitIndex * 3);
     }
 
+    const formatted = scaledNumberFormat.format(scaled);
+    const numberParts = options.groupCompactFractionDigits
+      ? groupScaledFraction(formatted)
+      : { number: formatted };
+
     return {
-      number: scaledNumberFormat.format(scaled),
+      ...numberParts,
       unit: unitNames[unitIndex],
     };
   }
@@ -104,7 +148,7 @@
       };
     }
 
-    return formatScaledParts(cleanValue);
+    return formatScaledParts(cleanValue, options);
   }
 
   function formatInline(parts) {

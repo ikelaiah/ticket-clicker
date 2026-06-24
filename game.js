@@ -2617,6 +2617,9 @@
   function formatPrimaryNumberParts(value) {
     return numberUnits.formatParts(value, {
       compactAt: PRIMARY_COMPACT_THRESHOLD,
+      compactMinimumFractionDigits: 6,
+      compactMaximumFractionDigits: 6,
+      groupCompactFractionDigits: true,
       floorExact: true,
     });
   }
@@ -2624,6 +2627,9 @@
   function formatPrimaryRateParts(value) {
     return numberUnits.formatParts(value, {
       compactAt: PRIMARY_COMPACT_THRESHOLD,
+      compactMinimumFractionDigits: 6,
+      compactMaximumFractionDigits: 6,
+      groupCompactFractionDigits: true,
       maximumFractionDigits: 1,
     });
   }
@@ -2642,6 +2648,10 @@
     if (options.primary) {
       element.classList.toggle("primary-value-long", parts.number.length > 9);
       element.classList.toggle("primary-value-extra-long", parts.number.length > 12);
+      element.classList.toggle(
+        "primary-value-compact",
+        Boolean(parts.numberTail),
+      );
     }
     if (element.dataset.numberSignature === signature) {
       return;
@@ -2650,7 +2660,21 @@
 
     const amount = document.createElement("span");
     amount.className = "number-amount";
-    amount.textContent = `${options.prefix || ""}${parts.number}`;
+    if (parts.numberTail) {
+      amount.classList.add("number-amount-grouped");
+
+      const lead = document.createElement("span");
+      lead.className = "number-lead";
+      lead.textContent = `${options.prefix || ""}${parts.numberLead}`;
+
+      const tail = document.createElement("span");
+      tail.className = "number-tail";
+      tail.textContent = parts.numberTail;
+
+      amount.append(lead, tail);
+    } else {
+      amount.textContent = `${options.prefix || ""}${parts.number}`;
+    }
 
     const children = [amount];
     if (unitText) {
@@ -2667,7 +2691,10 @@
     }
 
     element.replaceChildren(...children);
-    const spokenValue = [amount.textContent, unitText].filter(Boolean).join(" ");
+    const spokenNumber = `${options.prefix || ""}${
+      parts.spokenNumber || parts.number
+    }`;
+    const spokenValue = [spokenNumber, unitText].filter(Boolean).join(" ");
     element.setAttribute("aria-label", spokenValue);
   }
 

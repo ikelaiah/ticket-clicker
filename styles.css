@@ -278,6 +278,19 @@ p {
   font-variant-numeric: tabular-nums;
 }
 
+.number-amount-grouped {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.2em;
+}
+
+.number-tail {
+  color: color-mix(in srgb, currentColor 72%, var(--teal));
+  font-size: 0.78em;
+  letter-spacing: 0.045em;
+}
+
 .number-unit {
   margin-top: 3px;
   color: var(--soft);
