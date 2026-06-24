@@ -361,7 +361,7 @@
     (theme, item) => `${theme.prefix} ${item}`,
   ];
 
-  window.ticketClickerProcurementCatalog = Array.from(
+  const generatedProcurements = Array.from(
     { length: procurementThemes.length * procurementItems.length },
     (_, index) => {
       const themeIndex = index % procurementThemes.length;
@@ -399,4 +399,52 @@
       };
     },
   );
+
+  const describeEffect = (kind, amount) =>
+    kind === "click-flat"
+      ? `+${formatAmount(amount)} tickets per click`
+      : kind === "passive-flat"
+        ? `+${formatAmount(amount)} tickets per second`
+        : kind === "click-mult"
+          ? `+${Math.round(amount * 100)}% click power`
+          : `+${Math.round(amount * 100)}% automation output`;
+
+  const highScaleProcurements = [
+    ["it_password_reset_button", "Enterprise Password Reset Button", "click-flat", 5e96, 2.5e100, 1.2, "It resets every password simultaneously, eliminating the inefficient step where users forget them individually."],
+    ["it_cmdb_truth_engine", "AI-Ready CMDB Truth Reconciliation Engine", "passive-flat", 2e101, 8e105, 1.21, "It resolves conflicting asset records by selecting whichever source has the most expensive licence."],
+    ["it_global_dns_cab", "Global DNS Change Advisory Replica", "click-mult", 320, 3e111, 1.22, "Every DNS change is copied into a safe replica of the approval process. The actual DNS remains adventurous."],
+    ["it_kubernetes_restart_mesh", "Kubernetes Restart Observability Mesh", "passive-flat", 6e115, 9e120, 1.23, "It adds twelve dashboards per pod so teams can watch the restart that the dashboards caused."],
+    ["it_mainframe_usb_c", "Mainframe USB-C Modernisation Adapter", "passive-mult", 1400, 4e130, 1.24, "The adapter supports charging and strategic alignment. Data requires the premium cable roadmap."],
+
+    ["payroll_award_appliance", "Retroactive Award Interpretation Appliance", "passive-flat", 8e126, 2e136, 1.2, "It applies every industrial award interpretation ever issued, then opens a case to decide which result is legally cheerful."],
+    ["payroll_fortnight_calendar", "Enterprise Fortnight Normalisation Calendar", "click-flat", 3e134, 7e142, 1.21, "It guarantees exactly twenty-six fortnights per year by assigning the remaining time to Finance."],
+    ["payroll_spreadsheet_twin", "Payroll Spreadsheet Digital Twin", "passive-mult", 2600, 2.5e150, 1.22, "The digital twin mirrors every hidden column, broken link, and employee who knows which yellow cells are safe."],
+    ["payroll_timesheet_bot", "Executive Timesheet Completion Bot", "click-mult", 4100, 8e157, 1.23, "It enters eight hours of Strategic Leadership against whichever cost centre still has budget."],
+    ["payroll_rounding_cluster", "Superannuation Rounding Reconciliation Cluster", "passive-flat", 9e158, 3e166, 1.24, "A hyperscale cluster recovers fractions of cents at a cost-per-cent Finance has classified as commercially sensitive."],
+
+    ["finance_final_workbook", "Final_FINAL Workbook Governance Platform", "click-flat", 4e164, 1e172, 1.2, "Version control is enforced by adding the approver's initials and one additional FINAL to the filename."],
+    ["finance_three_way_metaverse", "Three-Way Match Metaverse", "passive-flat", 2e170, 4e178, 1.21, "Invoices, purchase orders, and receipts meet in an immersive environment and still refuse to agree."],
+    ["finance_month_end_clock", "Month-End Acceleration Clock", "click-mult", 7300, 1.5e184, 1.22, "It makes close happen faster by moving the deadline earlier and measuring success against the revised deadline."],
+    ["finance_capex_ai", "Capitalisation Decision AI", "passive-mult", 9800, 6e190, 1.23, "The model capitalises anything with a serial number, including the label printer and the consultant who configured it."],
+    ["finance_coa_translation", "Global Chart-of-Accounts Translation Layer", "passive-flat", 7e188, 2e198, 1.24, "It maps every local account to Global Miscellaneous and produces a beautiful exception report containing the economy."],
+
+    ["bank_idempotency_retry", "Idempotent Payment Retry Retry Service", "click-flat", 3e194, 8e204, 1.2, "The second Retry is intentional and billable. Duplicate payments receive a unique customer-experience identifier."],
+    ["bank_bsb_zero_vault", "BSB Leading-Zero Preservation Vault", "passive-flat", 9e200, 3e211, 1.21, "Each zero is encrypted separately and restored after CSV export, subject to branch availability."],
+    ["bank_realtime_overnight", "Real-Time Overnight Batch Platform", "passive-mult", 13500, 1e218, 1.22, "It runs overnight continuously in real time, preserving both architectural strategies and neither maintenance window."],
+    ["bank_fraud_exception_engine", "Fraud Model Exception Exception Engine", "click-mult", 18200, 4e224, 1.23, "It approves exceptions to the exception rules generated when the model blocks the fraud investigation team."],
+    ["bank_interim_mainframe", "Core Banking Transformation Interim Mainframe", "passive-flat", 8e218, 1.5e232, 1.24, "The temporary mainframe will retire after migration, regulatory approval, and the last employee who understands account type 07."],
+  ].map(([id, name, kind, amount, baseCost, growth, detail]) => ({
+    id: `proc_${id}`,
+    name,
+    description: `${describeEffect(kind, amount)}. ${detail}`,
+    baseCost,
+    growth,
+    kind,
+    amount,
+  }));
+
+  window.ticketClickerProcurementCatalog = [
+    ...generatedProcurements,
+    ...highScaleProcurements,
+  ];
 })();

@@ -62,6 +62,165 @@
     ],
   ].map(([label, amount, minResolved]) => ({ label, amount, minResolved }));
 
+  // Late-game incidents keep the failures recognisably real while scaling the
+  // resulting ticket storms to match the larger number system.
+  const highScaleIncidents = [
+    {
+      category: "General IT",
+      label:
+        "The CMDB reconciliation matched every unknown IP address to the same retired printer. Discovery opened one ticket per confidence score.",
+      amount: 2.4e15,
+      minResolved: 1e18,
+    },
+    {
+      category: "General IT",
+      label:
+        "The service-account rotation job now changes each password faster than applications can read the previous one. Every failed login is individually compliant.",
+      amount: 8e18,
+      minResolved: 1e21,
+    },
+    {
+      category: "Cloud and Kubernetes",
+      label:
+        "Monitoring began monitoring the dashboard that monitors monitoring. The recursive alert tree has requested its own platform team.",
+      amount: 3.2e24,
+      minResolved: 1e27,
+    },
+    {
+      category: "Cloud and Kubernetes",
+      label:
+        "The cloud cost optimiser deletes the estate at midnight and Terraform rebuilds it at 12:01. Finance is pleased with the monthly activity report.",
+      amount: 4.5e33,
+      minResolved: 1e36,
+    },
+    {
+      category: "Networking",
+      label:
+        "A global DNS search-and-replace changed every production hostname to the payroll kiosk. The kiosk is answering with admirable confidence.",
+      amount: 7e45,
+      minResolved: 1e48,
+    },
+    {
+      category: "Payroll & Billing",
+      label:
+        "A retroactive award was backdated to 1970. Payroll is recalculating every payslip, including the duplicates kept for audit confidence.",
+      amount: 6.7e15,
+      minResolved: 2.5e18,
+    },
+    {
+      category: "Payroll & Billing",
+      label:
+        "The fortnight calendar found a twenty-seventh pay run hidden between December and January. Every former employee has returned financially.",
+      amount: 9e21,
+      minResolved: 5e24,
+    },
+    {
+      category: "Payroll & Billing",
+      label:
+        "The payroll bot interpreted annual salary as an hourly rate and overtime as a multiplier. The executive team has volunteered for night shift.",
+      amount: 1.4e30,
+      minResolved: 1e33,
+    },
+    {
+      category: "Payroll & Billing",
+      label:
+        "The tax-table import used employee number as the tax bracket. Staff with short IDs are delighted and nobody else can afford lunch.",
+      amount: 2.8e42,
+      minResolved: 1e45,
+    },
+    {
+      category: "Payroll & Billing",
+      label:
+        "The termination import omitted its header row and treated the entire workforce as one departing employee. Final pay is now the largest department.",
+      amount: 5.1e57,
+      minResolved: 1e60,
+    },
+    {
+      category: "Finance and Spreadsheets",
+      label:
+        "An exchange-rate formula was dragged into the transaction-amount column across the finance data lake. Every currency is now worth Tuesday.",
+      amount: 1.2e18,
+      minResolved: 1e21,
+    },
+    {
+      category: "Finance and Spreadsheets",
+      label:
+        "Three-way matching joined every invoice to every purchase order and every goods receipt. Accounts Payable has achieved a perfect Cartesian product.",
+      amount: 7.4e27,
+      minResolved: 1e30,
+    },
+    {
+      category: "Finance and Spreadsheets",
+      label:
+        "The month-end reversal reversed last month's reversal of the previous reversal. The journal is technically balanced in several universes.",
+      amount: 3.3e36,
+      minResolved: 1e39,
+    },
+    {
+      category: "Finance and Spreadsheets",
+      label:
+        "Consolidation treated every cost centre as a legal entity and every spreadsheet tab as a subsidiary. Group Finance needs a larger group.",
+      amount: 6.6e48,
+      minResolved: 1e51,
+    },
+    {
+      category: "Finance and Spreadsheets",
+      label:
+        "The rounding reconciliation opened one case for every sub-cent ever removed from every currency. Audit would like each difference explained.",
+      amount: 9.9e63,
+      minResolved: 1e66,
+    },
+    {
+      category: "Finance and Spreadsheets",
+      label:
+        "A pivot-table cache duplicated the general ledger until the workbook developed its own monetary policy.",
+      amount: 2.2e81,
+      minResolved: 1e84,
+    },
+    {
+      category: "Banking",
+      label:
+        "The payment gateway retried without an idempotency key. One coffee purchase has become a diversified recurring investment.",
+      amount: 1.1e21,
+      minResolved: 1e24,
+    },
+    {
+      category: "Banking",
+      label:
+        "Leading zeroes disappeared from every BSB during migration. All accounts now belong to one extremely busy branch.",
+      amount: 5.5e30,
+      minResolved: 1e33,
+    },
+    {
+      category: "Banking",
+      label:
+        "The fraud model discovered that fraudulent transactions contain numbers. Digital banking has achieved complete fraud prevention.",
+      amount: 4.4e39,
+      minResolved: 1e42,
+    },
+    {
+      category: "Banking",
+      label:
+        "The overnight batch posted every debit as a credit and the balancing credit as another credit. Reconciliation has declared a prosperity event.",
+      amount: 8.8e51,
+      minResolved: 1e54,
+    },
+    {
+      category: "Banking",
+      label:
+        "The core migration interpreted dormant accounts as deleted, then recovery recreated each one as a new customer with a welcome bonus.",
+      amount: 3.1e69,
+      minResolved: 1e72,
+    },
+    {
+      category: "Banking",
+      label:
+        "The interest engine switched from daily compounding to every millisecond after a timezone patch. Savings customers have purchased the bank.",
+      amount: 7.7e87,
+      minResolved: 1e90,
+    },
+  ];
+
   const incidentPacks = [
     {
       domain: "Networking",
@@ -379,6 +538,7 @@
 
   window.ticketClickerIncidentCatalog = [
     ...featuredIncidents,
+    ...highScaleIncidents,
     ...patternedIncidents,
   ];
 })();

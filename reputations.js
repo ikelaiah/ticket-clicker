@@ -470,6 +470,79 @@
       window.ticketClickerNumberUnits.formatParts(target),
     );
 
+  const lateGameAchievement = (
+    emoji,
+    id,
+    name,
+    category,
+    metric,
+    target,
+    description,
+  ) => ({
+    id: `reputation_${id}`,
+    emoji,
+    name,
+    description: description(formatTarget(target)),
+    category,
+    metric,
+    target,
+  });
+
+  const lateGameAchievements = [
+    lateGameAchievement("🏭", "quintillion_queue_factory", "Quintillion-Queue Factory", "tickets", "resolved", 1e18, (target) =>
+      `Close ${target} tickets. The service desk now issues its own sovereign debt.`),
+    lateGameAchievement("🗄️", "septillion_retention_policy", "Septillion-Year Retention Policy", "tickets", "resolved", 1e24, (target) =>
+      `Close ${target} tickets. Records Management asks which spare universe stores the audit trail.`),
+    lateGameAchievement("🧬", "duplicate_of_everything", "Duplicate of Everything", "tickets", "resolved", 1e33, (target) =>
+      `Close ${target} tickets. Duplicate cases now outnumber the original events that could have created them.`),
+    lateGameAchievement("🔬", "statistically_significant_sla", "Statistically Significant SLA", "tickets", "resolved", 1e48, (target) =>
+      `Close ${target} tickets. Audit samples twenty-five and finds the process broadly encouraging.`),
+    lateGameAchievement("🕰️", "all_time_is_business_hours", "All Time Is Business Hours", "tickets", "resolved", 1e63, (target) =>
+      `Close ${target} tickets. The SLA clock has consumed every timezone and still excludes public holidays.`),
+    lateGameAchievement("🌌", "universal_first_line_support", "Universal First-Line Support", "tickets", "resolved", 1e90, (target) =>
+      `Close ${target} tickets. The observable universe has outsourced password resets to your queue.`),
+
+    lateGameAchievement("💵", "payroll_before_employment", "Payroll Before Employment", "automation", "tps", 1e18, (target) =>
+      `Reach ${target} tickets per second. Payroll finishes before employees have accepted their offers.`),
+    lateGameAchievement("📅", "month_thirteen_close", "Month-Thirteen Close", "automation", "tps", 1e27, (target) =>
+      `Reach ${target} tickets per second. Finance closes every month simultaneously and discovers Month 13.`),
+    lateGameAchievement("🏦", "faster_than_settlement", "Faster Than Settlement", "automation", "tps", 1e42, (target) =>
+      `Reach ${target} tickets per second. Banking settlement now arrives before the transaction and requests a timestamp exception.`),
+    lateGameAchievement("🔮", "preemptive_customer_survey", "Pre-emptive Customer Survey", "automation", "tps", 1e60, (target) =>
+      `Reach ${target} tickets per second. Automation closes incidents before they open and sends users a satisfaction survey about the future.`),
+    lateGameAchievement("⚙️", "cron_controls_causality", "Cron Controls Causality", "automation", "tps", 1e84, (target) =>
+      `Reach ${target} tickets per second. The cron schedule is now an authoritative source of causality.`),
+
+    lateGameAchievement("🖱️", "branch_history_button", "Branch-History Button", "clicking", "clickPower", 1e15, (target) =>
+      `Resolve ${target} tickets per click. One tap closes the branch, its incidents, and the meeting discussing both.`),
+    lateGameAchievement("✅", "approve_all_journals", "Approve All Journals", "clicking", "clickPower", 1e30, (target) =>
+      `Resolve ${target} tickets per click. Finance confirms the button was intended only for the selected row.`),
+    lateGameAchievement("🌐", "global_nostro_tap", "Global Nostro Tap", "clicking", "clickPower", 1e51, (target) =>
+      `Resolve ${target} tickets per click. Every bank account reconciles except the one used to test reconciliation.`),
+    lateGameAchievement("👆", "cab_emergency_gesture", "CAB Emergency Gesture", "clicking", "clickPower", 1e75, (target) =>
+      `Resolve ${target} tickets per click. Change approval is now expressed through one executive finger movement.`),
+
+    lateGameAchievement("💸", "quintillion_ticket_saving", "Quintillion-Ticket Saving", "procurement", "spent", 1e18, (target) =>
+      `Spend ${target} tickets. Procurement reports a saving against the price the vendor considered asking.`),
+    lateGameAchievement("📊", "business_case_event_horizon", "Business-Case Event Horizon", "procurement", "spent", 1e33, (target) =>
+      `Spend ${target} tickets. No measurable benefit can escape the business case.`),
+    lateGameAchievement("🧾", "invoice_larger_than_ledger", "Invoice Larger Than Ledger", "procurement", "spent", 1e51, (target) =>
+      `Spend ${target} tickets. Accounts Payable adds a second general ledger as an attachment.`),
+    lateGameAchievement("🏛️", "capital_expenditure_civilization", "Capital-Expenditure Civilisation", "procurement", "spent", 1e72, (target) =>
+      `Spend ${target} tickets. The asset register has developed government, taxation, and an unlicensed printer fleet.`),
+    lateGameAchievement("☁️", "cloud_bill_has_weather", "Cloud Bill Has Weather", "procurement", "spent", 1e99, (target) =>
+      `Spend ${target} tickets. The cloud invoice has seasons, tides, and a severe-cost warning.`),
+    lateGameAchievement("♾️", "budget_beyond_materiality", "Budget Beyond Materiality", "procurement", "spent", 1e180, (target) =>
+      `Spend ${target} tickets. Finance declares the variance immaterial because no remaining material can represent it.`),
+
+    lateGameAchievement("📥", "backlog_has_gdp", "Backlog Has a GDP", "operations", "maxOpenTickets", 1e18, (target) =>
+      `Let the queue reach ${target}. Economists have begun tracking quarterly backlog growth.`),
+    lateGameAchievement("🏙️", "tickets_form_legal_entity", "Tickets Form a Legal Entity", "operations", "maxOpenTickets", 1e36, (target) =>
+      `Let the queue reach ${target}. The tickets incorporate, hire counsel, and dispute their assigned priority.`),
+    lateGameAchievement("🕳️", "queue_event_horizon", "Queue Event Horizon", "operations", "maxOpenTickets", 1e57, (target) =>
+      `Let the queue reach ${target}. Status updates enter successfully; no resolution can escape.`),
+  ];
+
   const catalog = [];
   for (let tier = 0; tier < 20; tier += 1) {
     for (const achievementSeries of series) {
@@ -504,5 +577,6 @@
   }
 
   catalog.push(...extendedCatalog.slice(0, 492 - catalog.length));
+  catalog.push(...lateGameAchievements);
   window.ticketClickerReputationCatalog = catalog;
 })();
