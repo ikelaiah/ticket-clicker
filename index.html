@@ -100,10 +100,30 @@
             <span class="incident-light" aria-hidden="true"></span>
           </div>
 
+          <div id="newsTicker" class="news-ticker" role="status" aria-live="polite">
+            <span>IT News</span>
+            <strong id="newsTickerText">The service desk wire is warming up.</strong>
+            <small id="newsTickerMeta">Live</small>
+          </div>
+
           <div id="activeIncident" class="active-incident-card" aria-live="polite" aria-hidden="true">
             <span id="activeIncidentCategory">Operations</span>
             <strong id="activeIncidentText">No active incident</strong>
             <small id="activeIncidentImpact">Queue stable</small>
+          </div>
+
+          <div
+            id="moraleMeter"
+            class="morale-meter"
+            role="progressbar"
+            aria-label="Team morale"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+          >
+            <span class="morale-label">Team morale</span>
+            <span class="morale-track"><span id="moraleMeterFill"></span></span>
+            <strong id="moraleMeterValue">0%</strong>
           </div>
 
           <div id="officeEvolution" class="office-evolution">
@@ -154,6 +174,11 @@
                 <strong id="resolvedValue"><span class="number-amount">0</span></strong>
               </span>
             </span>
+            <span
+              id="procurementOrbit"
+              class="procurement-orbit"
+              aria-label="Recently purchased procurement"
+            ></span>
             <span class="ticket-art" aria-hidden="true">
               <svg viewBox="0 0 280 210" role="img">
                 <path class="ticket-shadow" d="M47 39 211 18c12-2 23 7 24 19l14 111c2 12-7 23-19 24L66 192c-12 2-23-7-24-19L28 62c-2-12 7-22 19-23Z" />

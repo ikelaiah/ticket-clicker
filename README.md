@@ -60,10 +60,14 @@ Progress saves automatically in the browser using `localStorage`.
 - 🚨 Categorized active incidents with impact summaries
 - 🎫 An SLA-driven ticket conveyor that becomes increasingly concerned
 - ✅ Animated ticket-resolution stamps
+- 📰 A rotating IT news wire with queue-aware headlines
+- 📄 Resolved-ticket rain and smoothly animated counters
+- 🔄 Full-speed catch-up when returning from another browser tab
 - 📱 Responsive desktop, landscape, and mobile layouts
 - 🎫 Randomly wandering tickets
 - 🐛 Bonus bugs that roam freely until you squash them
-- 🏢 An office that gains named, inspectable equipment as procurement succeeds
+- 🏢 An office that gains named equipment and orbiting procurement markers
+- 📈 A team-morale level that rises with desk reputation
 - 📦 No dependencies or build step
 
 ## 📁 Project Files

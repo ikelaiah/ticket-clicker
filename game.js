@@ -1320,6 +1320,26 @@
     { id: "security", name: "Security", color: "#e05d5d" },
     { id: "data", name: "Data", color: "#b58ad8" },
   ];
+  const newsHeadlines = [
+    "Printer promoted to senior infrastructure after surviving its third paper jam.",
+    "Change advisory board approves emergency meeting to discuss scheduling another meeting.",
+    "User confirms nothing changed, except the password, laptop, office, and legal name.",
+    "Vendor identifies the root cause as an unsupported interpretation of the contract.",
+    "Production is stable after monitoring was temporarily disabled.",
+    "New dashboard proves the queue is green when viewed from sufficiently far away.",
+    "Cybersecurity reminds staff that 'Password1!' is not stronger because it sounds excited.",
+    "Procurement discovers a spare HDMI dongle in the locked drawer containing the drawer key.",
+    "Service desk closes duplicate ticket; original ticket immediately files an appeal.",
+    "Cloud costs fall sharply after Finance closes the browser tab.",
+    "The backup completed successfully. Restoration remains a separate premium feature.",
+    "Network team reports packets are arriving eventually and asks everyone to lower expectations.",
+    "A critical spreadsheet has been placed under change control and emotional observation.",
+    "New starter receives access to every system except the one required for their job.",
+    "AI assistant confidently resolves ticket assigned to a different company.",
+    "Facilities confirms the server room temperature is technically a number.",
+    "Monitoring alert cleared after the alerting server became unavailable.",
+    "The ticket queue has opened a ticket about the ticket queue.",
+  ];
 
   const els = {
     resolved: document.getElementById("resolvedValue"),
@@ -1336,8 +1356,15 @@
     activeIncidentCategory: document.getElementById("activeIncidentCategory"),
     activeIncidentText: document.getElementById("activeIncidentText"),
     activeIncidentImpact: document.getElementById("activeIncidentImpact"),
+    newsTicker: document.getElementById("newsTicker"),
+    newsTickerText: document.getElementById("newsTickerText"),
+    newsTickerMeta: document.getElementById("newsTickerMeta"),
+    moraleMeter: document.getElementById("moraleMeter"),
+    moraleMeterFill: document.getElementById("moraleMeterFill"),
+    moraleMeterValue: document.getElementById("moraleMeterValue"),
     officeEvolution: document.getElementById("officeEvolution"),
     officeProps: [...document.querySelectorAll(".office-prop")],
+    procurementOrbit: document.getElementById("procurementOrbit"),
     ticketConveyor: document.getElementById("ticketConveyor"),
     conveyorTickets: [...document.querySelectorAll(".conveyor-ticket")],
     ticketButton: document.getElementById("ticketButton"),
@@ -1377,6 +1404,7 @@
   let lastFrame = performance.now();
   let renderAccumulator = 0;
   let saveAccumulator = 0;
+  let displayedValues = null;
   let statusTimer = 0;
   let stampTimer = 0;
   let particles = [];
@@ -1394,6 +1422,9 @@
   let queueRenderSignature = "";
   let buffRenderSignature = "";
   let timelineRenderSignature = "";
+  let procurementOrbitSignature = "";
+  let currentNewsHeadline = "";
+  let nextNewsAt = 0;
   let timelineEvents = state.log
     .slice(0, 4)
     .reverse()
@@ -1410,6 +1441,8 @@
   }
 
   applyOfflineProgress();
+  syncDisplayedValues();
+  rotateNews(true);
   checkAchievements();
   resizeCanvas();
   initializeDecorations();
@@ -1439,6 +1472,8 @@
     }
   });
   window.addEventListener("beforeunload", () => saveState(false));
+  window.addEventListener("pagehide", () => saveState(false));
+  document.addEventListener("visibilitychange", handleVisibilityChange);
   requestAnimationFrame(frame);
 
   function createDefaultState() {
@@ -1462,6 +1497,7 @@
       activeBuffs: {},
       lastIncidentLabel: "",
       nextMilestoneIndex: 0,
+      recentProcurements: [],
     };
   }
 
@@ -1489,6 +1525,9 @@
           ...(saved.activeBuffs || {}),
         },
         log: Array.isArray(saved.log) ? saved.log.slice(0, 6) : [],
+        recentProcurements: Array.isArray(saved.recentProcurements)
+          ? saved.recentProcurements.slice(0, 12)
+          : [],
       };
 
       merged.resolved = cleanNumber(merged.resolved);
@@ -1514,6 +1553,9 @@
       merged.nextMilestoneIndex = Number.isFinite(merged.nextMilestoneIndex)
         ? merged.nextMilestoneIndex
         : 0;
+      merged.recentProcurements = merged.recentProcurements.filter((upgradeId) =>
+        upgradeDefs.some((upgrade) => upgrade.id === upgradeId),
+      );
 
       for (const [buffId, expiresAt] of Object.entries(merged.activeBuffs)) {
         if (
@@ -1541,12 +1583,20 @@
   }
 
   function frame(now) {
+    if (document.hidden) {
+      lastFrame = now;
+      requestAnimationFrame(frame);
+      return;
+    }
+
     const delta = Math.min(0.25, (now - lastFrame) / 1000);
     lastFrame = now;
 
     tick(delta);
     updateParticles(delta);
     updateDecorations(delta);
+    updateDisplayedValues(delta);
+    renderLiveNumbers();
 
     renderAccumulator += delta;
     saveAccumulator += delta;
@@ -1577,6 +1627,9 @@
     if (Date.now() >= state.nextIncidentAt) {
       triggerIncident();
     }
+    if (Date.now() >= nextNewsAt) {
+      rotateNews();
+    }
 
     updateBuffs();
     checkMilestones();
@@ -1590,6 +1643,7 @@
     state.manualClicks += 1;
     addResolved(clickPower);
     spawnBurst(point.x, point.y, clickPower);
+    spawnTicketRain(point.x, clickPower);
     showFloatingText(point.x, point.y, `+${formatNumber(clickPower)}`);
     playTicketStamp();
     checkMilestones();
@@ -1712,6 +1766,10 @@
     state.resolved -= purchase.cost;
     state.totalSpent += purchase.cost;
     state.upgrades[upgrade.id] = owned(upgrade.id) + purchase.quantity;
+    state.recentProcurements = [
+      upgrade.id,
+      ...state.recentProcurements.filter((upgradeId) => upgradeId !== upgrade.id),
+    ].slice(0, 12);
     const quantityLabel = purchase.quantity > 1 ? ` x${formatNumber(purchase.quantity)}` : "";
     addLog(`Procurement approved: ${upgrade.name}${quantityLabel}.`, "success");
     setSaveStatus(`Approved x${formatNumber(purchase.quantity)}`);
@@ -2042,21 +2100,45 @@
   }
 
   function applyOfflineProgress() {
-    const secondsAway = Math.min(MAX_OFFLINE_SECONDS, Math.max(0, (Date.now() - state.lastSave) / 1000));
+    applyElapsedProgress(0.65, "Offline automation");
+  }
+
+  function applyElapsedProgress(efficiency, label) {
+    const now = Date.now();
+    const secondsAway = Math.min(
+      MAX_OFFLINE_SECONDS,
+      Math.max(0, (now - state.lastSave) / 1000),
+    );
     const passive = getTicketsPerSecond();
 
-    if (secondsAway < 20 || passive <= 0) {
-      state.lastSave = Date.now();
-      return;
+    if (secondsAway < 1 || passive <= 0) {
+      state.lastSave = now;
+      return 0;
     }
 
-    const earned = passive * secondsAway * 0.65;
+    const earned = passive * secondsAway * efficiency;
     const incoming = getIncomingRate() * secondsAway;
     state.openTickets += incoming;
     trackQueuePeak();
     addResolved(earned);
-    addLog(`Offline automation closed ${formatNumber(earned)} tickets.`, "success");
-    state.lastSave = Date.now();
+    addLog(`${label} closed ${formatNumber(earned)} tickets.`, "success");
+    state.lastSave = now;
+    return earned;
+  }
+
+  function handleVisibilityChange() {
+    if (document.hidden) {
+      saveState(false);
+      return;
+    }
+
+    const earned = applyElapsedProgress(1, "Background automation");
+    lastFrame = performance.now();
+    if (earned > 0) {
+      setSaveStatus("Caught up");
+    }
+    saveState(false);
+    render();
   }
 
   function saveState(showStatus) {
@@ -2095,6 +2177,8 @@
     majorIncidentUntil = 0;
     wasMajorIncident = false;
     particles = [];
+    syncDisplayedValues();
+    rotateNews(true);
     saveState(false);
     render();
   }
@@ -2109,17 +2193,9 @@
 
   function render() {
     const clickPower = getClickPower();
-    const tps = getTicketsPerSecond();
     const sla = getSlaStatus();
 
-    setStackedNumber(els.resolved, formatPrimaryNumberParts(state.resolved), {
-      primary: true,
-    });
-    setStackedNumber(els.total, formatNumberParts(state.totalResolved));
-    setStackedNumber(els.tps, formatPrimaryRateParts(tps), {
-      primary: true,
-    });
-    setStackedNumber(els.queue, formatNumberParts(state.openTickets));
+    renderLiveNumbers();
     els.sla.textContent = sla.label;
     els.bonus.textContent = `${Math.round(getAchievementBonus() * 100)}%`;
     els.heatMeter.style.width = `${Math.min(100, Math.max(8, sla.width))}%`;
@@ -2135,9 +2211,87 @@
     renderBuffs();
     renderTimeline();
     renderOfficeEvolution();
+    renderProcurementOrbit();
+    renderMoraleMeter();
     renderUpgrades();
     renderAchievements();
     renderLog();
+  }
+
+  function syncDisplayedValues() {
+    displayedValues = {
+      resolved: state.resolved,
+      totalResolved: state.totalResolved,
+      openTickets: state.openTickets,
+    };
+  }
+
+  function updateDisplayedValues(delta) {
+    if (!displayedValues) {
+      syncDisplayedValues();
+      return;
+    }
+
+    const blend = reduceMotion ? 1 : 1 - Math.exp(-Math.max(0, delta) * 11);
+    for (const key of Object.keys(displayedValues)) {
+      const target = state[key];
+      const difference = target - displayedValues[key];
+      displayedValues[key] =
+        Math.abs(difference) < 0.0001
+          ? target
+          : displayedValues[key] + difference * blend;
+    }
+  }
+
+  function renderLiveNumbers() {
+    const values = displayedValues || state;
+    setStackedNumber(els.resolved, formatPrimaryNumberParts(values.resolved), {
+      primary: true,
+    });
+    setStackedNumber(els.total, formatNumberParts(values.totalResolved));
+    setStackedNumber(els.tps, formatPrimaryRateParts(getTicketsPerSecond()), {
+      primary: true,
+    });
+    setStackedNumber(els.queue, formatNumberParts(values.openTickets));
+  }
+
+  function rotateNews(force = false) {
+    const purchasedCount = Object.values(state.upgrades).filter((count) => count > 0).length;
+    const unlockedCount = Object.keys(state.achievements).length;
+    const dynamicHeadlines = [
+      purchasedCount
+        ? `Procurement celebrates ${formatNumber(purchasedCount)} approved solutions; storage celebrates nothing.`
+        : "",
+      unlockedCount
+        ? `Desk reputation reaches ${formatNumber(unlockedCount)} commendations; management requests a pie chart.`
+        : "",
+      state.openTickets >= 100
+        ? `Queue passes ${formatNumber(state.openTickets)} open tickets and is reclassified as a strategic backlog.`
+        : "",
+      state.bugsSquashed > 0
+        ? `${formatNumber(state.bugsSquashed)} software bugs squashed; developers report several were features.`
+        : "",
+    ].filter(Boolean);
+    const pool = [...newsHeadlines, ...dynamicHeadlines];
+    let headline = pool[Math.floor(Math.random() * pool.length)] || newsHeadlines[0];
+
+    if (!force && pool.length > 1) {
+      while (headline === currentNewsHeadline) {
+        headline = pool[Math.floor(Math.random() * pool.length)];
+      }
+    }
+
+    currentNewsHeadline = headline;
+    els.newsTickerText.textContent = headline;
+    els.newsTickerText.title = headline;
+    els.newsTickerMeta.textContent = `${new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    })} · Service Desk Wire`;
+    els.newsTicker.classList.remove("news-updated");
+    void els.newsTicker.offsetWidth;
+    els.newsTicker.classList.add("news-updated");
+    nextNewsAt = Date.now() + randomBetween(9000, 15000);
   }
 
   function renderMajorIncident(sla) {
@@ -2359,6 +2513,70 @@
         tooltip.textContent = label;
       }
     });
+  }
+
+  function renderProcurementOrbit() {
+    const ownedUpgradeIds = upgradeDefs
+      .filter((upgrade) => owned(upgrade.id) > 0)
+      .map((upgrade) => upgrade.id);
+    const orderedIds = [
+      ...state.recentProcurements,
+      ...ownedUpgradeIds.filter((upgradeId) => !state.recentProcurements.includes(upgradeId)),
+    ];
+    const visibleIds = orderedIds.slice(0, 10);
+    const signature = visibleIds
+      .map((upgradeId) => `${upgradeId}:${owned(upgradeId)}`)
+      .join("|");
+
+    if (signature === procurementOrbitSignature) {
+      return;
+    }
+    procurementOrbitSignature = signature;
+    els.procurementOrbit.classList.toggle("has-items", visibleIds.length > 0);
+
+    const fragment = document.createDocumentFragment();
+    visibleIds.forEach((upgradeId, index) => {
+      const upgrade = upgradeDefs.find((item) => item.id === upgradeId);
+      if (!upgrade) {
+        return;
+      }
+
+      const node = document.createElement("span");
+      const angle = (360 / visibleIds.length) * index;
+      const icon =
+        upgrade.kind === "click-flat"
+          ? "↗"
+          : upgrade.kind === "passive-flat"
+            ? "⚙"
+            : upgrade.kind === "click-mult"
+              ? "×"
+              : "↻";
+      node.className = `procurement-node kind-${upgrade.kind}`;
+      node.style.setProperty("--orbit-angle", `${angle}deg`);
+      node.textContent = icon;
+      node.title = `${upgrade.name} · ${formatNumber(owned(upgrade.id))} owned`;
+      node.setAttribute("aria-hidden", "true");
+      fragment.append(node);
+    });
+    els.procurementOrbit.replaceChildren(fragment);
+    els.procurementOrbit.setAttribute(
+      "aria-label",
+      `${ownedUpgradeIds.length} purchased procurement types orbiting the ticket`,
+    );
+  }
+
+  function renderMoraleMeter() {
+    const unlockedCount = Object.keys(state.achievements).length;
+    const progress = achievementDefs.length
+      ? Math.min(100, (unlockedCount / achievementDefs.length) * 100)
+      : 0;
+    const rounded = Math.round(progress);
+    els.moraleMeterFill.style.height = `${progress}%`;
+    els.moraleMeterValue.textContent = `${rounded}%`;
+    els.moraleMeter.setAttribute("aria-valuenow", String(rounded));
+    els.moraleMeter.title =
+      `${unlockedCount} of ${achievementDefs.length} reputations · ` +
+      `${Math.round(getAchievementBonus() * 100)}% productivity bonus`;
   }
 
   function renderUpgrades() {
@@ -2904,6 +3122,33 @@
         rotation: randomBetween(-0.5, 0.5),
         spin: randomBetween(-5, 5),
         color: colors[Math.floor(Math.random() * colors.length)],
+        shape: "confetti",
+      });
+    }
+  }
+
+  function spawnTicketRain(originX, amount) {
+    if (reduceMotion) {
+      return;
+    }
+
+    const width = els.canvas.clientWidth;
+    const count = Math.min(10, 3 + Math.floor(Math.log2(Math.max(1, amount))));
+    for (let index = 0; index < count; index += 1) {
+      particles.push({
+        x: Math.min(width - 16, Math.max(16, originX + randomBetween(-190, 190))),
+        y: randomBetween(-70, -16),
+        vx: randomBetween(-34, 34),
+        vy: randomBetween(85, 170),
+        gravity: randomBetween(55, 110),
+        age: -index * 0.045,
+        life: randomBetween(1.7, 2.5),
+        width: randomBetween(17, 25),
+        height: randomBetween(11, 16),
+        rotation: randomBetween(-0.7, 0.7),
+        spin: randomBetween(-2.4, 2.4),
+        color: Math.random() < 0.22 ? "#f2c14e" : "#f5f0df",
+        shape: "ticket",
       });
     }
   }
@@ -2915,6 +3160,9 @@
 
     particles = particles.filter((particle) => {
       particle.age += delta;
+      if (particle.age < 0) {
+        return true;
+      }
       if (particle.age >= particle.life) {
         return false;
       }
@@ -2932,7 +3180,14 @@
       ctx.fillStyle = particle.color;
       ctx.fillRect(-particle.width / 2, -particle.height / 2, particle.width, particle.height);
       ctx.fillStyle = "rgba(16, 18, 17, 0.52)";
-      ctx.fillRect(-particle.width / 3, -1, particle.width * 0.66, 2);
+      if (particle.shape === "ticket") {
+        ctx.fillRect(-particle.width * 0.28, -particle.height * 0.22, particle.width * 0.56, 1.5);
+        ctx.fillRect(-particle.width * 0.28, particle.height * 0.08, particle.width * 0.38, 1.5);
+        ctx.fillStyle = "#1f8a70";
+        ctx.fillRect(particle.width * 0.16, particle.height * 0.04, particle.width * 0.18, 2);
+      } else {
+        ctx.fillRect(-particle.width / 3, -1, particle.width * 0.66, 2);
+      }
       ctx.restore();
 
       return particle.y < height + 60 && particle.x > -80 && particle.x < width + 80;

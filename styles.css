@@ -844,6 +844,68 @@ p {
     box-shadow 120ms ease;
 }
 
+.ticket-button > .ticket-scoreboard,
+.ticket-button > .ticket-art,
+.ticket-button > .click-label,
+.ticket-button > .ticket-rate,
+.ticket-button > .click-power {
+  position: relative;
+  z-index: 2;
+}
+
+.procurement-orbit {
+  position: absolute;
+  top: 52%;
+  left: 50%;
+  z-index: 1;
+  display: block;
+  width: min(92%, 330px);
+  aspect-ratio: 1;
+  border: 1px dashed transparent;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.procurement-orbit.has-items {
+  border-color: rgba(88, 198, 167, 0.12);
+  opacity: 1;
+  animation: procurement-orbit-spin 28s linear infinite;
+}
+
+.procurement-node {
+  position: absolute;
+  top: calc(50% - 14px);
+  left: calc(50% - 14px);
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid rgba(245, 240, 223, 0.45);
+  border-radius: 50%;
+  background: #19211e;
+  color: var(--paper);
+  box-shadow:
+    0 5px 12px rgba(0, 0, 0, 0.42),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.03);
+  font-size: 0.8rem;
+  font-weight: 950;
+  transform: rotate(var(--orbit-angle)) translateX(clamp(112px, 9vw, 145px));
+}
+
+.procurement-node.kind-passive-flat,
+.procurement-node.kind-passive-mult {
+  border-color: rgba(88, 198, 167, 0.62);
+  color: var(--teal);
+}
+
+.procurement-node.kind-click-flat,
+.procurement-node.kind-click-mult {
+  border-color: rgba(242, 193, 78, 0.62);
+  color: var(--amber);
+}
+
 .ticket-button:hover {
   border-color: var(--amber);
   background:
@@ -1303,6 +1365,24 @@ p {
   }
 }
 
+@keyframes procurement-orbit-spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes news-headline-in {
+  from {
+    opacity: 0;
+    transform: translateY(-7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .swimming-ticket:nth-child(n + 4),
   .office-bug:nth-child(n + 3) {
@@ -1314,6 +1394,8 @@ p {
   .ticket-stamp.is-stamping,
   .office-evolution .office-prop,
   .prop-coffee::after,
+  .procurement-orbit.has-items,
+  .news-ticker.news-updated strong,
   .desk-stage.incident-hit {
     animation: none;
   }
@@ -1639,7 +1721,7 @@ p {
 
 .active-incident-card {
   position: absolute;
-  top: 18px;
+  top: 58px;
   left: 50%;
   z-index: 6;
   display: grid;
@@ -1666,7 +1748,119 @@ p {
 }
 
 .major-incident .active-incident-card {
-  top: 54px;
+  top: 94px;
+}
+
+.news-ticker {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 6;
+  display: grid;
+  width: min(72%, 560px);
+  min-height: 34px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  overflow: hidden;
+  border: 1px solid rgba(88, 198, 167, 0.38);
+  border-radius: 6px;
+  background: rgba(13, 17, 15, 0.94);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: top 180ms ease;
+}
+
+.major-incident .news-ticker {
+  top: 52px;
+}
+
+.news-ticker > span {
+  padding: 3px 5px;
+  border-radius: 3px;
+  background: var(--teal);
+  color: #0c1713;
+  font-size: 0.58rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.news-ticker strong {
+  overflow: hidden;
+  color: var(--paper);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.news-ticker small {
+  color: var(--soft);
+  font-size: 0.58rem;
+  white-space: nowrap;
+}
+
+.news-ticker.news-updated strong {
+  animation: news-headline-in 480ms ease-out;
+}
+
+.morale-meter {
+  position: absolute;
+  bottom: 84px;
+  left: 16px;
+  z-index: 5;
+  display: grid;
+  width: 42px;
+  justify-items: center;
+  gap: 5px;
+  padding: 7px 6px;
+  border: 1px solid rgba(88, 198, 167, 0.35);
+  border-radius: 7px;
+  background: rgba(13, 17, 15, 0.88);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.24);
+  pointer-events: none;
+}
+
+.morale-label {
+  color: var(--soft);
+  font-size: 0.52rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.morale-track {
+  position: relative;
+  width: 14px;
+  height: 86px;
+  overflow: hidden;
+  border: 1px solid #52635b;
+  border-radius: 8px 8px 4px 4px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 16px, rgba(255, 255, 255, 0.08) 16px 17px),
+    #0b0e0d;
+}
+
+.morale-track > span {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(171, 255, 222, 0.92), var(--teal) 20%, #1f8a70);
+  box-shadow: 0 0 12px rgba(88, 198, 167, 0.42);
+  transition: height 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.morale-meter strong {
+  color: var(--teal);
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .active-incident-card > span {
@@ -2345,7 +2539,19 @@ body.drawer-open {
   }
 
   .active-incident-card {
-    top: 10px;
+    top: 48px;
+  }
+
+  .news-ticker {
+    top: 8px;
+  }
+
+  .major-incident .news-ticker {
+    top: 46px;
+  }
+
+  .major-incident .active-incident-card {
+    top: 84px;
   }
 
   .buff-strip {
@@ -2365,10 +2571,28 @@ body.drawer-open {
 }
 
 @media (max-width: 760px) {
-  .active-incident-card {
-    top: 10px;
+  .news-ticker {
+    top: 8px;
     width: calc(100% - 20px);
     grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .news-ticker small {
+    display: none;
+  }
+
+  .major-incident .news-ticker {
+    top: 46px;
+  }
+
+  .active-incident-card {
+    top: 48px;
+    width: calc(100% - 20px);
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .major-incident .active-incident-card {
+    top: 86px;
   }
 
   .active-incident-card small {
@@ -2386,6 +2610,21 @@ body.drawer-open {
 
   .ticket-art {
     width: min(100%, 210px);
+  }
+
+  .procurement-orbit {
+    width: min(92%, 285px);
+  }
+
+  .procurement-node {
+    transform: rotate(var(--orbit-angle)) translateX(122px);
+  }
+
+  .morale-meter {
+    bottom: 72px;
+    left: 9px;
+    transform: scale(0.86);
+    transform-origin: bottom left;
   }
 
   .buff-strip {
@@ -2443,6 +2682,10 @@ body.drawer-open {
 
   .ticket-art {
     width: min(100%, 180px);
+  }
+
+  .procurement-orbit {
+    display: none;
   }
 
   .click-label {
