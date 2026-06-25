@@ -1721,11 +1721,11 @@ p {
 
 .active-incident-card {
   position: absolute;
-  top: 58px;
+  top: 78px;
   left: 50%;
   z-index: 6;
   display: grid;
-  width: min(72%, 520px);
+  width: min(86%, 720px);
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
@@ -1748,7 +1748,7 @@ p {
 }
 
 .major-incident .active-incident-card {
-  top: 94px;
+  top: 116px;
 }
 
 .news-ticker {
@@ -1757,7 +1757,7 @@ p {
   left: 50%;
   z-index: 6;
   display: grid;
-  width: min(72%, 560px);
+  width: min(86%, 760px);
   min-height: 34px;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -1789,11 +1789,13 @@ p {
 }
 
 .news-ticker strong {
+  display: block;
   overflow: hidden;
   color: var(--paper);
   font-size: 0.72rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .news-ticker small {
@@ -1874,10 +1876,12 @@ p {
 }
 
 .active-incident-card strong {
+  display: block;
   overflow: hidden;
   font-size: 0.76rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .active-incident-card small {
@@ -2539,7 +2543,7 @@ body.drawer-open {
   }
 
   .active-incident-card {
-    top: 48px;
+    top: 70px;
   }
 
   .news-ticker {
@@ -2551,7 +2555,7 @@ body.drawer-open {
   }
 
   .major-incident .active-incident-card {
-    top: 84px;
+    top: 108px;
   }
 
   .buff-strip {
@@ -2586,13 +2590,13 @@ body.drawer-open {
   }
 
   .active-incident-card {
-    top: 48px;
+    top: 70px;
     width: calc(100% - 20px);
     grid-template-columns: auto minmax(0, 1fr);
   }
 
   .major-incident .active-incident-card {
-    top: 86px;
+    top: 110px;
   }
 
   .active-incident-card small {
