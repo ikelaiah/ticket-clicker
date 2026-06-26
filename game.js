@@ -1407,7 +1407,6 @@
     moraleMeterValue: document.getElementById("moraleMeterValue"),
     officeEvolution: document.getElementById("officeEvolution"),
     officeProps: [...document.querySelectorAll(".office-prop")],
-    procurementOrbit: document.getElementById("procurementOrbit"),
     ticketConveyor: document.getElementById("ticketConveyor"),
     conveyorTickets: [...document.querySelectorAll(".conveyor-ticket")],
     ticketButton: document.getElementById("ticketButton"),
@@ -1465,7 +1464,6 @@
   let queueRenderSignature = "";
   let buffRenderSignature = "";
   let timelineRenderSignature = "";
-  let procurementOrbitSignature = "";
   let currentNewsHeadline = "";
   let nextNewsAt = 0;
   let timelineEvents = state.log
@@ -1541,7 +1539,6 @@
       activeBuffs: {},
       lastIncidentLabel: "",
       nextMilestoneIndex: 0,
-      recentProcurements: [],
     };
   }
 
@@ -1569,9 +1566,6 @@
           ...(saved.activeBuffs || {}),
         },
         log: Array.isArray(saved.log) ? saved.log.slice(0, 6) : [],
-        recentProcurements: Array.isArray(saved.recentProcurements)
-          ? saved.recentProcurements.slice(0, 12)
-          : [],
       };
 
       merged.resolved = cleanNumber(merged.resolved);
@@ -1601,10 +1595,6 @@
       merged.nextMilestoneIndex = Number.isFinite(merged.nextMilestoneIndex)
         ? merged.nextMilestoneIndex
         : 0;
-      merged.recentProcurements = merged.recentProcurements.filter((upgradeId) =>
-        upgradeDefs.some((upgrade) => upgrade.id === upgradeId),
-      );
-
       for (const [buffId, expiresAt] of Object.entries(merged.activeBuffs)) {
         if (
           !buffDefs.some((buff) => buff.id === buffId) ||
@@ -1977,10 +1967,6 @@
     state.resolved -= purchase.cost;
     state.totalSpent += purchase.cost;
     state.upgrades[upgrade.id] = owned(upgrade.id) + purchase.quantity;
-    state.recentProcurements = [
-      upgrade.id,
-      ...state.recentProcurements.filter((upgradeId) => upgradeId !== upgrade.id),
-    ].slice(0, 12);
     const quantityLabel = purchase.quantity > 1 ? ` x${formatNumber(purchase.quantity)}` : "";
     addLog(`Procurement approved: ${upgrade.name}${quantityLabel}.`, "success");
     setSaveStatus(`Approved x${formatNumber(purchase.quantity)}`);
@@ -2437,7 +2423,6 @@
     renderBuffs();
     renderTimeline();
     renderOfficeEvolution();
-    renderProcurementOrbit();
     renderMoraleMeter();
     renderUpgrades();
     renderAchievements();
@@ -2734,56 +2719,6 @@
         tooltip.textContent = label;
       }
     });
-  }
-
-  function renderProcurementOrbit() {
-    const ownedUpgradeIds = upgradeDefs
-      .filter((upgrade) => owned(upgrade.id) > 0)
-      .map((upgrade) => upgrade.id);
-    const orderedIds = [
-      ...state.recentProcurements,
-      ...ownedUpgradeIds.filter((upgradeId) => !state.recentProcurements.includes(upgradeId)),
-    ];
-    const visibleIds = orderedIds.slice(0, 10);
-    const signature = visibleIds
-      .map((upgradeId) => `${upgradeId}:${owned(upgradeId)}`)
-      .join("|");
-
-    if (signature === procurementOrbitSignature) {
-      return;
-    }
-    procurementOrbitSignature = signature;
-    els.procurementOrbit.classList.toggle("has-items", visibleIds.length > 0);
-
-    const fragment = document.createDocumentFragment();
-    visibleIds.forEach((upgradeId, index) => {
-      const upgrade = upgradeDefs.find((item) => item.id === upgradeId);
-      if (!upgrade) {
-        return;
-      }
-
-      const node = document.createElement("span");
-      const angle = (360 / visibleIds.length) * index;
-      const icon =
-        upgrade.kind === "click-flat"
-          ? "↗"
-          : upgrade.kind === "passive-flat"
-            ? "⚙"
-            : upgrade.kind === "click-mult"
-              ? "×"
-              : "↻";
-      node.className = `procurement-node kind-${upgrade.kind}`;
-      node.style.setProperty("--orbit-angle", `${angle}deg`);
-      node.textContent = icon;
-      node.title = `${upgrade.name} · ${formatNumber(owned(upgrade.id))} owned`;
-      node.setAttribute("aria-hidden", "true");
-      fragment.append(node);
-    });
-    els.procurementOrbit.replaceChildren(fragment);
-    els.procurementOrbit.setAttribute(
-      "aria-label",
-      `${ownedUpgradeIds.length} purchased procurement types orbiting the ticket`,
-    );
   }
 
   function renderMoraleMeter() {

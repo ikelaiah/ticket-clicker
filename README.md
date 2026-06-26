@@ -66,7 +66,7 @@ Progress saves automatically in the browser using `localStorage`.
 - 📱 Responsive desktop, landscape, and mobile layouts
 - 🎫 Randomly wandering tickets
 - 🐛 Bonus bugs that roam freely until you squash them
-- 🏢 An office that gains named equipment and orbiting procurement markers
+- 🏢 An office that gains named equipment as your operation grows
 - 📈 A team-morale level that rises with desk reputation
 - 📦 No dependencies or build step
 

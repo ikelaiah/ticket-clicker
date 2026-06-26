@@ -853,59 +853,6 @@ p {
   z-index: 2;
 }
 
-.procurement-orbit {
-  position: absolute;
-  top: 52%;
-  left: 50%;
-  z-index: 1;
-  display: block;
-  width: min(92%, 330px);
-  aspect-ratio: 1;
-  border: 1px dashed transparent;
-  border-radius: 50%;
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-}
-
-.procurement-orbit.has-items {
-  border-color: rgba(88, 198, 167, 0.12);
-  opacity: 1;
-  animation: procurement-orbit-spin 28s linear infinite;
-}
-
-.procurement-node {
-  position: absolute;
-  top: calc(50% - 14px);
-  left: calc(50% - 14px);
-  display: grid;
-  width: 28px;
-  height: 28px;
-  place-items: center;
-  border: 1px solid rgba(245, 240, 223, 0.45);
-  border-radius: 50%;
-  background: #19211e;
-  color: var(--paper);
-  box-shadow:
-    0 5px 12px rgba(0, 0, 0, 0.42),
-    inset 0 0 0 2px rgba(255, 255, 255, 0.03);
-  font-size: 0.8rem;
-  font-weight: 950;
-  transform: rotate(var(--orbit-angle)) translateX(clamp(112px, 9vw, 145px));
-}
-
-.procurement-node.kind-passive-flat,
-.procurement-node.kind-passive-mult {
-  border-color: rgba(88, 198, 167, 0.62);
-  color: var(--teal);
-}
-
-.procurement-node.kind-click-flat,
-.procurement-node.kind-click-mult {
-  border-color: rgba(242, 193, 78, 0.62);
-  color: var(--amber);
-}
-
 .ticket-button:hover {
   border-color: var(--amber);
   background:
@@ -1365,12 +1312,6 @@ p {
   }
 }
 
-@keyframes procurement-orbit-spin {
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-
 @keyframes news-headline-in {
   from {
     opacity: 0;
@@ -1394,7 +1335,6 @@ p {
   .ticket-stamp.is-stamping,
   .office-evolution .office-prop,
   .prop-coffee::after,
-  .procurement-orbit.has-items,
   .news-ticker.news-updated strong,
   .desk-stage.incident-hit {
     animation: none;
@@ -2645,14 +2585,6 @@ body.drawer-open {
     width: min(100%, 210px);
   }
 
-  .procurement-orbit {
-    width: min(92%, 285px);
-  }
-
-  .procurement-node {
-    transform: rotate(var(--orbit-angle)) translateX(122px);
-  }
-
   .morale-meter {
     bottom: 72px;
     left: 9px;
@@ -2715,10 +2647,6 @@ body.drawer-open {
 
   .ticket-art {
     width: min(100%, 180px);
-  }
-
-  .procurement-orbit {
-    display: none;
   }
 
   .click-label {
