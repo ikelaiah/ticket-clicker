@@ -330,31 +330,31 @@
     {
       domain: "Edumate",
       incidents: [
-        "Edumate marked the entire class absent because the roll was saved one second after the bell policy changed.",
-        "The Edumate timetable rollover placed Year 7 in Chemistry and their teacher in last year.",
-        "Edumate merged two siblings into one highly accomplished student with conflicting allergies.",
-        "The Edumate parent portal shows the correct family under the wrong family's welcome message.",
-        "A medical alert disappeared from the Edumate screen after somebody sorted the list by surname.",
-        "The Edumate report export has 47 columns, including six called Student Name.",
-        "New-year rollover promoted every student except the ones selected for promotion.",
-        "A withdrawn student returned to Edumate because an overnight sync believes in second chances.",
-        "Edumate permissions let the relief teacher edit Finance but not take attendance.",
-        "Duplicate guardians received duplicate notices and have both replied from the same email address.",
+        "An attendance roll saved during a bell-time policy refresh and queued a polite verification pass.",
+        "The timetable rollover found a legacy room code and gave it one last cameo.",
+        "Edumate Sync matched sibling records a little too enthusiastically during overnight reconciliation.",
+        "The parent portal served fresh student details inside a cached page header.",
+        "A student note moved below the fold after a surname sort met a custom view.",
+        "The report export included six Student Name columns, because context is important and apparently plentiful.",
+        "New-year rollover completed cleanly, then asked why the promotion selection was still in last year.",
+        "Edumate Sync restored a recently withdrawn record from an older integration snapshot.",
+        "A permissions template gave the relief teacher every menu except the one needed before period one.",
+        "Edumate Sync sent a duplicate guardian notification and logged the second reply as extra confirmation.",
       ],
     },
     {
       domain: "EnrolHQ",
       incidents: [
-        "An EnrolHQ application cannot continue because a mandatory field is hidden until the application continues.",
-        "The EnrolHQ offer email links families to the sandbox, where everyone has been warmly offered Test College.",
-        "The enrolment deposit was paid, but the webhook is still waiting for a more convenient financial moment.",
-        "EnrolHQ treated twins as a duplicate application and asked the family to choose the canonical child.",
-        "A parent uploaded an HEIC document and the review screen responded with modern-art confidence.",
-        "An EnrolHQ workflow moved Submitted to Reviewing to Submitted until the audit log needed pagination.",
-        "The school-tour booking used UTC and invited three families to inspect the campus before sunrise.",
-        "A parent corrected their email address, but the original address remains the workflow's emotional favourite.",
-        "The EnrolHQ export put emergency contacts into the previous applicant's row for efficient networking.",
-        "A year-level rule offered a place to a student in the year level they will reach during contract renewal.",
+        "An application workflow found a mandatory field on the next step and opened a philosophical dependency ticket.",
+        "The offer email used the sandbox link, where Test College remains undefeated in admissions.",
+        "EnrolHQ Sync received the deposit event before the finance webhook finished checking its calendar.",
+        "EnrolHQ Sync flagged a sibling application for review because matching rules were being responsibly cautious.",
+        "An HEIC preview loaded as a minimalist white rectangle and called it cross-platform diplomacy.",
+        "A workflow bounced Submitted and Reviewing until the audit log requested a chair.",
+        "The school-tour booking used UTC and discovered the campus is less available before sunrise.",
+        "The corrected email address updated the profile while an older workflow token kept a souvenir.",
+        "The EnrolHQ Sync export nudged emergency-contact columns one row south during a CSV relay.",
+        "A year-level rule compared calendar year, academic year, and one very confident configuration setting.",
       ],
     },
     {
@@ -524,11 +524,31 @@
     },
   ];
 
+  function getCatalogIncidentCategory(domain, label) {
+    const text = label.toLowerCase();
+
+    if (
+      domain === "Edumate" &&
+      /edumate sync|overnight reconciliation|older integration snapshot|duplicate guardian notification/.test(text)
+    ) {
+      return "Edumate Sync";
+    }
+
+    if (
+      domain === "EnrolHQ" &&
+      /enrolhq sync|webhook|sibling application|sync export/.test(text)
+    ) {
+      return "EnrolHQ Sync";
+    }
+
+    return domain;
+  }
+
   const patternedIncidents = incidentPacks.flatMap(
     (pack, domainIndex) =>
       pack.incidents.map((label, incidentIndex) => ({
         label,
-        category: pack.domain,
+        category: getCatalogIncidentCategory(pack.domain, label),
         amount: 28 + domainIndex * 11 + incidentIndex * 17,
         minResolved: Math.round(
           40 * Math.pow(1.24, domainIndex + incidentIndex * 1.4),

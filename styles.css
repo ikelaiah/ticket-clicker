@@ -1679,15 +1679,44 @@ p {
 .queue-composition-list {
   display: grid;
   gap: 7px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-color: rgba(88, 198, 167, 0.42) rgba(13, 16, 15, 0.7);
 }
 
 .queue-composition-row {
   display: grid;
-  grid-template-columns: minmax(74px, 0.9fr) minmax(60px, 1.3fr) auto;
+  grid-template-columns: minmax(90px, 1fr) minmax(52px, 1fr) auto;
   align-items: center;
   gap: 8px;
   color: var(--muted);
   font-size: 0.74rem;
+}
+
+.queue-composition-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(214, 222, 217, 0.1);
+  color: var(--soft);
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.queue-composition-group:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.queue-composition-group small {
+  color: var(--muted);
+  font: inherit;
 }
 
 .queue-composition-row > span:first-child {
@@ -2697,7 +2726,7 @@ body.drawer-open {
   }
 
   .queue-composition-row {
-    grid-template-columns: minmax(70px, 0.9fr) minmax(54px, 1.2fr) auto;
+    grid-template-columns: minmax(82px, 1fr) minmax(46px, 0.9fr) auto;
   }
 
   .drawer-panel .achievement-list {

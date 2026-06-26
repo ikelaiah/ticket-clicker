@@ -835,7 +835,12 @@
     ["Blue-green deployment completed with both environments configured blue.", 665, 102000],
     ["The feature works only for administrators because every developer is an administrator.", 773, 147000],
     ["Rollback deployed the same broken artifact because latest is apparently immutable.", 899, 212000],
-  ].map(([label, amount, minResolved]) => ({ label, amount, minResolved }));
+  ].map(([label, amount, minResolved]) => ({
+    label,
+    amount,
+    minResolved,
+    category: classifyIncident(label),
+  }));
 
   const incidentDefs = [
     ...realLifeIncidentDefs,
@@ -1314,12 +1319,50 @@
     },
   ];
   const queueCategoryDefs = [
-    { id: "access", name: "Access", color: "#58c6a7" },
-    { id: "software", name: "Software", color: "#f2c14e" },
-    { id: "network", name: "Network", color: "#6da8d9" },
-    { id: "security", name: "Security", color: "#e05d5d" },
-    { id: "data", name: "Data", color: "#b58ad8" },
+    { id: "service_desk", name: "Service Desk", group: "Service Desk", color: "#9bc57f", weight: 1.3 },
+    { id: "general_it", name: "General IT", group: "Service Desk", color: "#58c6a7", weight: 1.6 },
+    { id: "hardware_av", name: "Hardware and AV", group: "Service Desk", color: "#d9a441", weight: 1 },
+    { id: "printers", name: "Printers", group: "Service Desk", color: "#a6b0bf", weight: 0.8 },
+    { id: "edumate", name: "Edumate", group: "Application", color: "#f2a35e", weight: 0.8 },
+    { id: "edumate_sync", name: "Edumate Sync", group: "Application", color: "#f07f55", weight: 0.5 },
+    { id: "enrolhq", name: "EnrolHQ", group: "Application", color: "#db81a8", weight: 0.8 },
+    { id: "enrolhq_sync", name: "EnrolHQ Sync", group: "Application", color: "#d86f82", weight: 0.5 },
+    { id: "browsers", name: "Browsers", group: "Application", color: "#6fc5d5", weight: 0.9 },
+    { id: "software_dev", name: "Software Dev", group: "Application", color: "#f2c14e", weight: 1.2 },
+    { id: "windows", name: "Windows", group: "Operating Systems", color: "#4fa3d9", weight: 1.2 },
+    { id: "macos", name: "macOS", group: "Operating Systems", color: "#9ca8b5", weight: 0.35 },
+    { id: "linux", name: "Linux", group: "Operating Systems", color: "#8fb25f", weight: 0.55 },
+    { id: "networking", name: "Networking", group: "Infrastructure", color: "#6da8d9", weight: 1.2 },
+    { id: "identity", name: "Identity", group: "Infrastructure", color: "#c48bd5", weight: 1.2 },
+    { id: "email_teams", name: "Email and Teams", group: "Infrastructure", color: "#5cbac0", weight: 1.1 },
+    { id: "smsglobal", name: "SMSGlobal", group: "Infrastructure", color: "#68c77f", weight: 0.7 },
+    { id: "integrations", name: "Integrations", group: "Infrastructure", color: "#b58ad8", weight: 1.1 },
+    { id: "cloud_kubernetes", name: "Cloud and Kubernetes", group: "Infrastructure", color: "#8aa8ff", weight: 0.9 },
+    { id: "backups", name: "Backups", group: "Infrastructure", color: "#d6d171", weight: 0.7 },
+    { id: "databases", name: "Databases", group: "Data and Finance", color: "#7cc7a0", weight: 1 },
+    { id: "data_engineering", name: "Data Engineering", group: "Data and Finance", color: "#9f9eed", weight: 1 },
+    { id: "payroll", name: "Payroll", group: "Data and Finance", color: "#d7a3dd", weight: 0.7 },
+    { id: "billing", name: "Billing", group: "Data and Finance", color: "#d88d5b", weight: 0.7 },
+    { id: "payroll_billing", name: "Payroll & Billing", group: "Data and Finance", color: "#c58a74", weight: 0.8 },
+    { id: "finance_spreadsheets", name: "Finance and Spreadsheets", group: "Data and Finance", color: "#58a79e", weight: 0.9 },
+    { id: "banking", name: "Banking", group: "Data and Finance", color: "#7ac48a", weight: 0.7 },
+    { id: "cybersecurity", name: "Cybersecurity", group: "Security", color: "#e05d5d", weight: 1.3 },
+    { id: "operations", name: "Operations", group: "Operations", color: "#8d948f", weight: 0.4 },
   ];
+  const queueCategoryAliases = new Map([
+    ...queueCategoryDefs.map((category) => [category.name.toLowerCase(), category.name]),
+    ["access", "Identity"],
+    ["data", "Data Engineering"],
+    ["education apps", "Edumate"],
+    ["integration", "Integrations"],
+    ["linux and macos", "Linux"],
+    ["linux & macos", "Linux"],
+    ["messaging", "Email and Teams"],
+    ["network", "Networking"],
+    ["os support", "Windows"],
+    ["security", "Cybersecurity"],
+    ["software", "Software Dev"],
+  ]);
   const newsHeadlines = [
     "Printer promoted to senior infrastructure after surviving its third paper jam.",
     "Change advisory board approves emergency meeting to discuss scheduling another meeting.",
@@ -1482,6 +1525,7 @@
       totalResolved: 0,
       totalSpent: 0,
       openTickets: 24,
+      queueComposition: createInitialQueueComposition(24),
       manualClicks: 0,
       incidentsTriggered: 0,
       bugsSquashed: 0,
@@ -1534,6 +1578,10 @@
       merged.totalResolved = cleanNumber(merged.totalResolved);
       merged.totalSpent = cleanNumber(merged.totalSpent);
       merged.openTickets = Math.max(0, cleanNumber(merged.openTickets));
+      merged.queueComposition = sanitizeQueueComposition(
+        merged.queueComposition,
+        merged.openTickets,
+      );
       merged.manualClicks = Math.max(0, cleanNumber(merged.manualClicks));
       merged.incidentsTriggered = Math.max(0, Math.floor(cleanNumber(merged.incidentsTriggered)));
       merged.bugsSquashed = Math.max(0, Math.floor(cleanNumber(merged.bugsSquashed)));
@@ -1582,6 +1630,169 @@
     return Number.isFinite(number) ? number : 0;
   }
 
+  function normalizeCategoryName(category) {
+    const text = String(category || "").trim().toLowerCase();
+    return queueCategoryAliases.get(text) || "Operations";
+  }
+
+  function getIncidentCategory(incident) {
+    return normalizeCategoryName(incident.category || classifyIncident(incident.label));
+  }
+
+  function getAmbientQueueWeights() {
+    return Object.fromEntries(
+      queueCategoryDefs.map((category) => [
+        category.name,
+        Math.max(0, cleanNumber(category.weight)),
+      ]),
+    );
+  }
+
+  function createInitialQueueComposition(total) {
+    return allocateQueueTickets(total, getAmbientQueueWeights());
+  }
+
+  function allocateQueueTickets(total, weights) {
+    const cleanTotal = Math.max(0, cleanNumber(total));
+    const entries = Object.entries(weights)
+      .map(([category, weight]) => [
+        normalizeCategoryName(category),
+        Math.max(0, cleanNumber(weight)),
+      ])
+      .filter(([, weight]) => weight > 0);
+    const weightTotal = entries.reduce((sum, [, weight]) => sum + weight, 0);
+    const composition = {};
+
+    if (cleanTotal <= 0 || weightTotal <= 0) {
+      return composition;
+    }
+
+    for (const [category, weight] of entries) {
+      composition[category] = (composition[category] || 0) + cleanTotal * (weight / weightTotal);
+    }
+    return composition;
+  }
+
+  function sanitizeQueueComposition(composition, targetTotal) {
+    const cleanTarget = Math.max(0, cleanNumber(targetTotal));
+    const normalized = {};
+
+    if (composition && typeof composition === "object") {
+      for (const [category, count] of Object.entries(composition)) {
+        const cleanCount = Math.max(0, cleanNumber(count));
+        if (cleanCount > 0) {
+          const normalizedCategory = normalizeCategoryName(category);
+          normalized[normalizedCategory] = (normalized[normalizedCategory] || 0) + cleanCount;
+        }
+      }
+    }
+
+    if (cleanTarget <= 0) {
+      return {};
+    }
+
+    const currentTotal = Object.values(normalized).reduce((sum, count) => sum + count, 0);
+    if (currentTotal <= 0) {
+      return createInitialQueueComposition(cleanTarget);
+    }
+
+    const scale = cleanTarget / currentTotal;
+    for (const category of Object.keys(normalized)) {
+      normalized[category] *= scale;
+    }
+    return normalized;
+  }
+
+  function addQueueTickets(amount, category) {
+    const cleanAmount = Math.max(0, cleanNumber(amount));
+    if (cleanAmount <= 0) {
+      return;
+    }
+
+    const normalizedCategory = normalizeCategoryName(category);
+    state.openTickets += cleanAmount;
+    state.queueComposition = state.queueComposition || {};
+    state.queueComposition[normalizedCategory] =
+      (state.queueComposition[normalizedCategory] || 0) + cleanAmount;
+  }
+
+  function addQueueTicketsByWeights(amount, weights) {
+    const cleanAmount = Math.max(0, cleanNumber(amount));
+    if (cleanAmount <= 0) {
+      return;
+    }
+
+    state.openTickets += cleanAmount;
+    state.queueComposition = state.queueComposition || {};
+    const added = allocateQueueTickets(cleanAmount, weights);
+    for (const [category, count] of Object.entries(added)) {
+      state.queueComposition[category] = (state.queueComposition[category] || 0) + count;
+    }
+  }
+
+  function removeQueueTickets(amount) {
+    const cleanAmount = Math.max(0, cleanNumber(amount));
+    const previousTotal = Math.max(0, cleanNumber(state.openTickets));
+    const removed = Math.min(previousTotal, cleanAmount);
+
+    state.openTickets = Math.max(0, previousTotal - cleanAmount);
+    if (removed <= 0) {
+      return;
+    }
+
+    state.queueComposition = sanitizeQueueComposition(state.queueComposition, previousTotal);
+    const compositionTotal = Object.values(state.queueComposition).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
+
+    if (compositionTotal <= 0 || removed >= compositionTotal) {
+      state.queueComposition = {};
+      return;
+    }
+
+    for (const category of Object.keys(state.queueComposition)) {
+      const share = state.queueComposition[category] / compositionTotal;
+      state.queueComposition[category] = Math.max(
+        0,
+        state.queueComposition[category] - removed * share,
+      );
+    }
+    state.queueComposition = sanitizeQueueComposition(
+      state.queueComposition,
+      state.openTickets,
+    );
+  }
+
+  function getQueueDisplayCounts(total) {
+    const roundedTotal = Math.max(0, Math.round(total));
+    const composition = sanitizeQueueComposition(state.queueComposition, state.openTickets);
+    state.queueComposition = composition;
+    const compositionTotal = Object.values(composition).reduce((sum, count) => sum + count, 0);
+
+    if (roundedTotal <= 0 || compositionTotal <= 0) {
+      return queueCategoryDefs.map(() => 0);
+    }
+
+    const exactCounts = queueCategoryDefs.map(
+      (category) => ((composition[category.name] || 0) / compositionTotal) * roundedTotal,
+    );
+    const counts = exactCounts.map((count) => Math.floor(count));
+    let remaining = roundedTotal - counts.reduce((sum, count) => sum + count, 0);
+    const fractionalOrder = exactCounts
+      .map((count, index) => ({ index, fraction: count - Math.floor(count) }))
+      .sort((a, b) => b.fraction - a.fraction);
+
+    for (const { index } of fractionalOrder) {
+      if (remaining <= 0) {
+        break;
+      }
+      counts[index] += 1;
+      remaining -= 1;
+    }
+    return counts;
+  }
+
   function frame(now) {
     if (document.hidden) {
       lastFrame = now;
@@ -1616,7 +1827,7 @@
 
   function tick(delta) {
     const incoming = getIncomingRate() * delta;
-    state.openTickets += incoming;
+    addQueueTicketsByWeights(incoming, getAmbientQueueWeights());
     trackQueuePeak();
 
     const passive = getTicketsPerSecond() * delta;
@@ -1782,7 +1993,7 @@
     const previousQueue = state.openTickets;
     state.resolved += amount;
     state.totalResolved += amount;
-    state.openTickets = Math.max(0, state.openTickets - amount);
+    removeQueueTickets(amount);
     if (previousQueue >= 1 && state.openTickets < 1) {
       state.queueClears += 1;
     }
@@ -2023,13 +2234,14 @@
     const pressureScale = 1 + Math.min(3, state.totalResolved / 12000);
     const amount = Math.round(incident.amount * pressureScale);
 
-    state.openTickets += amount;
+    const category = getIncidentCategory(incident);
+    addQueueTickets(amount, category);
     state.incidentsTriggered += 1;
     trackQueuePeak();
     state.lastIncidentLabel = incident.label;
     state.nextIncidentAt = Date.now() + randomBetween(30000, 70000);
     activeIncident = {
-      category: incident.category || classifyIncident(incident.label),
+      category,
       label: incident.label,
       amount,
       expiresAt: Date.now() + 12000,
@@ -2043,19 +2255,33 @@
   function classifyIncident(label) {
     const text = label.toLowerCase();
     const rules = [
-      ["Education Apps", /edumate|enrolhq|enrolment|school-tour|student|guardian|parent portal/],
-      ["Payroll & Billing", /payroll|salary|overtime|superannuation|billing|invoice|gst|credit note|payment|bank file/],
-      ["Messaging", /smsglobal|sms |sender id|delivery receipt|mobile numbers|outlook|teams|mailbox|email/],
+      ["Edumate Sync", /edumate.*(sync|merged|sibling|duplicate|guardian|withdrawn)|student.*edumate/],
+      ["EnrolHQ Sync", /enrolhq.*(sync|duplicate|twins|webhook|export|applicant)/],
+      ["Edumate", /edumate|parent portal|guardian/],
+      ["EnrolHQ", /enrolhq|enrolment|school-tour/],
+      ["SMSGlobal", /smsglobal|sender id|delivery receipt|mobile numbers/],
+      ["Email and Teams", /sms |outlook|teams|mailbox|email|calendar|distribution list/],
       ["Browsers", /browser|chrome|edge|internet explorer|cookies|cache|pop-up|downloads folder|browser zoom/],
-      ["Cybersecurity", /phish|security|mfa|password|firewall|ransom|vulnerab|certificate|soc|siem|secret|access/],
-      ["Networking", /network|wi-fi|wifi|dns|dhcp|router|switch|vlan|vpn|proxy|latency|packet|port 443/],
+      ["Identity", /single sign-on|sso|conditional access|mfa|password reset|identity|guest access|break-glass|privileged-access|new starter.*account/],
+      ["Cybersecurity", /phish|security|mfa|password|firewall|ransom|vulnerab|certificate|soc|siem|secret/],
+      ["Networking", /network|wi-fi|wifi|dns|dhcp|router|switch|vlan|vpn|proxy|latency|packet|port 443|access point/],
       ["Windows", /windows|active directory|group policy|registry|powershell|domain controller|bitlocker/],
-      ["Linux & macOS", /linux|ubuntu|kernel|sudo|macos|macbook|terminal|homebrew|bash|zsh/],
+      ["macOS", /macos|macbook|homebrew|filevault|launchd|system keychain/],
+      ["Linux", /linux|ubuntu|kernel|sudo|bash|zsh|selinux|systemd|cron|chmod|nfs|inode|filesystem|ssh|swap|ansible/],
+      ["Databases", /database|sql|schema|query|index|replica|connection pool/],
       ["Data Engineering", /data|csv|pipeline|warehouse|database|sql|schema|etl|spark|kafka|airflow/],
-      ["Integration", /integration|api|webhook|connector|sync|oauth|sftp|middleware/],
-      ["Software Dev", /deploy|devops|build|release|production|repository|git|code|bug|container|kubernetes|docker/],
-      ["OS Support", /operating system|update|patch|driver|reboot|boot|blue screen/],
-      ["General IT", /laptop|monitor|keyboard|mouse|install|software|printer|browser|email|outlook|teams/],
+      ["Integrations", /integration|api|webhook|connector|sync|oauth|sftp|middleware/],
+      ["Payroll", /payroll|salary|overtime|superannuation|bank file/],
+      ["Billing", /billing|invoice|gst|credit note|payment/],
+      ["Finance and Spreadsheets", /finance|spreadsheet|excel|workbook|pivot|journal|ledger|budget/],
+      ["Banking", /banking|bank|bsb|interest|fraud|payment gateway/],
+      ["Cloud and Kubernetes", /cloud|kubernetes|pod|terraform|serverless|autoscaler/],
+      ["Software Dev", /deploy|devops|build|release|production|repository|git|code|bug|container|docker/],
+      ["Backups", /backup|restore|snapshot|retention|disaster recovery/],
+      ["Printers", /printer|print|spooler|scanner|label printer/],
+      ["Hardware and AV", /laptop|monitor|keyboard|mouse|camera|webcam|audio|projector|conference-room|usb-c|hdmi/],
+      ["Service Desk", /ticket|requester|service portal|knowledge article|resolver group|incident bridge/],
+      ["General IT", /operating system|update|patch|driver|reboot|boot|blue screen|install|software/],
     ];
     return rules.find(([, pattern]) => pattern.test(text))?.[0] || "Operations";
   }
@@ -2118,7 +2344,7 @@
 
     const earned = passive * secondsAway * efficiency;
     const incoming = getIncomingRate() * secondsAway;
-    state.openTickets += incoming;
+    addQueueTicketsByWeights(incoming, getAmbientQueueWeights());
     trackQueuePeak();
     addResolved(earned);
     addLog(`${label} closed ${formatNumber(earned)} tickets.`, "success");
@@ -2356,34 +2582,7 @@
 
   function renderQueueComposition() {
     const total = Math.max(0, Math.round(state.openTickets));
-    const categoryWeights = [0.24, 0.31, 0.17, 0.13, 0.15];
-    const activeCategory = activeIncident?.category || "";
-    const preferredIndex =
-      activeCategory === "Cybersecurity"
-        ? 3
-        : activeCategory === "Networking"
-          ? 2
-          : activeCategory === "Data Engineering" || activeCategory === "Integration"
-            ? 4
-            : activeCategory
-              ? 1
-              : -1;
-
-    if (preferredIndex >= 0) {
-      categoryWeights[preferredIndex] += 0.2;
-    }
-
-    const weightTotal = categoryWeights.reduce((sum, weight) => sum + weight, 0);
-    const counts = [];
-    let allocated = 0;
-    for (let index = 0; index < queueCategoryDefs.length; index += 1) {
-      const count =
-        index === queueCategoryDefs.length - 1
-          ? Math.max(0, total - allocated)
-          : Math.round(total * (categoryWeights[index] / weightTotal));
-      counts.push(count);
-      allocated += count;
-    }
+    const counts = getQueueDisplayCounts(total);
 
     const signature = `${total}:${counts.join(",")}`;
     setStackedNumber(els.queueCompositionTotal, formatNumberParts(total), {
@@ -2395,12 +2594,34 @@
     queueRenderSignature = signature;
 
     const fragment = document.createDocumentFragment();
+    let currentGroup = "";
     queueCategoryDefs.forEach((category, index) => {
+      if (category.group !== currentGroup) {
+        currentGroup = category.group;
+        const group = document.createElement("div");
+        group.className = "queue-composition-group";
+
+        const groupName = document.createElement("span");
+        groupName.textContent = currentGroup;
+
+        const groupCount = document.createElement("small");
+        const groupTotal = queueCategoryDefs.reduce(
+          (sum, item, itemIndex) =>
+            item.group === currentGroup ? sum + counts[itemIndex] : sum,
+          0,
+        );
+        groupCount.textContent = formatNumber(groupTotal);
+
+        group.append(groupName, groupCount);
+        fragment.append(group);
+      }
+
       const row = document.createElement("div");
       row.className = "queue-composition-row";
 
       const name = document.createElement("span");
       name.textContent = category.name;
+      name.title = category.name;
 
       const track = document.createElement("span");
       track.className = "queue-composition-track";
