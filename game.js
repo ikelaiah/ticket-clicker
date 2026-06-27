@@ -1499,6 +1499,9 @@
   let displayedValues = null;
   let statusTimer = 0;
   let stampTimer = 0;
+  let objectiveAnimationFrame = 0;
+  let objectiveTransitionTimer = 0;
+  let lastObjectiveId = null;
   let particles = [];
   let decorativeSprites = [];
   const upgradeViews = new Map();
@@ -2834,12 +2837,81 @@
     return upgradeDefs.find((upgrade) => owned(upgrade.id) < 1) || null;
   }
 
+  function updateObjectiveName(objectiveId, name) {
+    if (lastObjectiveId === null) {
+      lastObjectiveId = objectiveId;
+      els.objectiveName.textContent = name;
+      return;
+    }
+
+    if (lastObjectiveId === objectiveId) {
+      if (!objectiveAnimationFrame) {
+        els.objectiveName.textContent = name;
+      }
+      return;
+    }
+
+    lastObjectiveId = objectiveId;
+    playObjectiveTransition(name);
+  }
+
+  function playObjectiveTransition(name) {
+    window.cancelAnimationFrame(objectiveAnimationFrame);
+    objectiveAnimationFrame = 0;
+    window.clearTimeout(objectiveTransitionTimer);
+    els.nextObjective.classList.remove("is-updating");
+    void els.nextObjective.offsetWidth;
+    els.nextObjective.classList.add("is-updating");
+
+    if (reduceMotion) {
+      els.objectiveName.textContent = name;
+      objectiveTransitionTimer = window.setTimeout(
+        () => els.nextObjective.classList.remove("is-updating"),
+        900,
+      );
+      return;
+    }
+
+    const glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#?/";
+    const startedAt = performance.now();
+    const duration = 720;
+    els.nextObjective.setAttribute("aria-live", "off");
+
+    const animate = (now) => {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      const revealed = Math.floor(progress * name.length);
+      els.objectiveName.textContent = [...name]
+        .map((character, index) => {
+          if (index < revealed || character === " " || /[^a-z0-9]/i.test(character)) {
+            return character;
+          }
+          return glyphs[Math.floor(Math.random() * glyphs.length)];
+        })
+        .join("");
+
+      if (progress < 1) {
+        objectiveAnimationFrame = window.requestAnimationFrame(animate);
+        return;
+      }
+
+      objectiveAnimationFrame = 0;
+      els.objectiveName.textContent = name;
+      els.nextObjective.setAttribute("aria-live", "polite");
+      objectiveTransitionTimer = window.setTimeout(
+        () => els.nextObjective.classList.remove("is-updating"),
+        360,
+      );
+    };
+
+    objectiveAnimationFrame = window.requestAnimationFrame(animate);
+  }
+
   function renderNextObjective() {
     const upgrade = getNextObjectiveUpgrade();
     if (!upgrade) {
       els.nextObjective.classList.add("is-complete");
       els.nextObjective.classList.remove("is-ready");
-      els.objectiveName.textContent = "Procurement portfolio complete";
+      updateObjectiveName("__complete__", "Procurement portfolio complete");
       els.objectiveValue.textContent = `${upgradeDefs.length} / ${upgradeDefs.length}`;
       els.objectiveProgressFill.style.width = "100%";
       els.objectiveHint.textContent =
@@ -2857,10 +2929,10 @@
     const progress = cost > 0 ? Math.min(100, (state.resolved / cost) * 100) : 100;
     els.nextObjective.classList.remove("is-complete");
     els.nextObjective.classList.toggle("is-ready", affordable);
-    els.objectiveName.textContent = upgrade.name;
-    els.objectiveValue.textContent = `${formatNumber(Math.min(state.resolved, cost))} / ${formatNumber(
-      cost,
-    )} tickets`;
+    updateObjectiveName(upgrade.id, upgrade.name);
+    els.objectiveValue.textContent = affordable
+      ? "Ready to buy"
+      : `${Math.floor(progress)}% funded`;
     els.objectiveProgressFill.style.width = `${progress}%`;
     els.objectiveHint.textContent = affordable
       ? "Budget ready. Open Procurement to approve this upgrade."
