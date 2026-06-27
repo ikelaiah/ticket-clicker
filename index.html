@@ -44,8 +44,56 @@
         </div>
       </header>
 
+      <nav class="mobile-game-tabs" role="tablist" aria-label="Game sections">
+        <button
+          id="mobileDeskTab"
+          class="mobile-game-tab is-active"
+          type="button"
+          role="tab"
+          aria-selected="true"
+          aria-controls="deskPanel"
+          data-mobile-tab="desk"
+        >
+          <span aria-hidden="true">🎫</span>
+          Desk
+        </button>
+        <button
+          id="mobileQueueTab"
+          class="mobile-game-tab"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="queuePanel"
+          tabindex="-1"
+          data-mobile-tab="queue"
+        >
+          <span aria-hidden="true">📥</span>
+          Queue
+        </button>
+        <button
+          id="mobileShopTab"
+          class="mobile-game-tab"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="shopPanel"
+          tabindex="-1"
+          data-mobile-tab="shop"
+        >
+          <span aria-hidden="true">🛒</span>
+          Shop
+        </button>
+      </nav>
+
       <main class="game-grid">
-        <aside class="panel metrics-panel" aria-label="Helpdesk metrics">
+        <aside
+          id="queuePanel"
+          class="panel metrics-panel mobile-tab-panel"
+          role="tabpanel"
+          aria-label="Helpdesk metrics"
+          aria-labelledby="mobileQueueTab"
+          data-mobile-panel="queue"
+        >
           <div class="panel-heading">
             <span class="panel-kicker">Live queue</span>
             <h2>Shift Board</h2>
@@ -91,7 +139,14 @@
           </section>
         </aside>
 
-        <section class="desk-stage" aria-label="Ticket resolution desk">
+        <section
+          id="deskPanel"
+          class="desk-stage mobile-tab-panel is-mobile-active"
+          role="tabpanel"
+          aria-label="Ticket resolution desk"
+          aria-labelledby="mobileDeskTab"
+          data-mobile-panel="desk"
+        >
           <canvas id="particleCanvas" aria-hidden="true"></canvas>
 
           <div id="incidentAlert" class="incident-alert" role="status" aria-live="polite" aria-hidden="true">
@@ -127,6 +182,11 @@
           </div>
 
           <div id="officeEvolution" class="office-evolution">
+            <div class="office-level-sign" aria-live="polite">
+              <span>Current office</span>
+              <strong id="officeLevelName">Service Desk Corner</strong>
+              <small id="officeLevelProgress">0 of 520 procurements installed</small>
+            </div>
             <span class="office-prop prop-coffee" tabindex="0" role="img" aria-label="Coffee Refill Rotation">
               <span class="office-tooltip">Coffee Refill Rotation</span>
             </span>
@@ -138,6 +198,15 @@
             </span>
             <span class="office-prop prop-rack" tabindex="0" role="img" aria-label="Overnight Patch Window">
               <span class="office-tooltip">Overnight Patch Window</span>
+            </span>
+            <span class="office-prop prop-plant" tabindex="0" role="img" aria-label="Approved Office Plant">
+              <span class="office-tooltip">Approved Office Plant</span>
+            </span>
+            <span class="office-prop prop-team" tabindex="0" role="img" aria-label="Expanded Service Desk Team">
+              <span class="office-tooltip">Expanded Service Desk Team</span>
+            </span>
+            <span class="office-prop prop-window" tabindex="0" role="img" aria-label="Command Centre View">
+              <span class="office-tooltip">Command Centre View</span>
             </span>
           </div>
 
@@ -167,7 +236,22 @@
             <button class="office-bug" type="button" aria-label="Squash bug for bonus tickets" title="Squash bug"></button>
           </div>
 
-          <button id="ticketButton" class="ticket-button" type="button">
+          <div class="desk-action">
+            <button id="nextObjective" class="next-objective" type="button" aria-live="polite">
+              <span class="objective-heading">
+                <span>
+                  <small>Next objective</small>
+                  <strong id="objectiveName">Color-Coded Sticky Notes</strong>
+                </span>
+                <span id="objectiveValue">0 / 15 tickets</span>
+              </span>
+              <span class="objective-track" aria-hidden="true">
+                <span id="objectiveProgressFill"></span>
+              </span>
+              <small id="objectiveHint">Resolve 15 tickets to unlock your first procurement.</small>
+            </button>
+
+            <button id="ticketButton" class="ticket-button" type="button">
             <span class="ticket-scoreboard">
               <span class="ticket-score">
                 <small>Resolved tickets</small>
@@ -194,7 +278,8 @@
               <span class="number-amount">+1</span>
               <small class="number-unit">ticket per click</small>
             </span>
-          </button>
+            </button>
+          </div>
 
           <div id="buffStrip" class="buff-strip" aria-label="Active temporary boosts">
             <span class="buff-empty">No active operational boosts</span>
@@ -208,7 +293,14 @@
           <div id="floatingTextLayer" class="floating-layer" aria-hidden="true"></div>
         </section>
 
-        <aside class="panel upgrades-panel" aria-label="Procurement upgrades">
+        <aside
+          id="shopPanel"
+          class="panel upgrades-panel mobile-tab-panel"
+          role="tabpanel"
+          aria-label="Procurement upgrades"
+          aria-labelledby="mobileShopTab"
+          data-mobile-panel="shop"
+        >
           <div class="panel-heading">
             <span class="panel-kicker">Procurement</span>
             <h2>Upgrades</h2>
@@ -228,6 +320,15 @@
               <button class="filter-chip" type="button" data-upgrade-filter="enterprise" aria-pressed="false">Enterprise</button>
             </div>
             <span id="upgradeResultCount" class="upgrade-result-count">500 upgrades</span>
+            <div class="procurement-collection" aria-label="Procurement collection progress">
+              <span>
+                <strong id="procurementCollectionCount">0 of 520 installed</strong>
+                <small id="procurementCollectionNext">Next office: Operations Bay</small>
+              </span>
+              <span class="procurement-collection-track" aria-hidden="true">
+                <span id="procurementCollectionFill"></span>
+              </span>
+            </div>
           </div>
           <div id="upgradeList" class="upgrade-list"></div>
         </aside>

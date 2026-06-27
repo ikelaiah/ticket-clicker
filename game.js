@@ -542,6 +542,44 @@
     ...coreUpgradeDefs,
     ...(window.ticketClickerProcurementCatalog || []),
   ];
+  const OFFICE_TIERS = [
+    {
+      id: "service-desk",
+      name: "Service Desk Corner",
+      requirement: 0,
+      description: "One desk, one queue, no approved plant.",
+    },
+    {
+      id: "operations-bay",
+      name: "Operations Bay",
+      requirement: 5,
+      description: "Enough equipment to look intentionally organised.",
+    },
+    {
+      id: "support-floor",
+      name: "Regional Support Floor",
+      requirement: 25,
+      description: "A real team, a bigger queue, and several meeting rooms.",
+    },
+    {
+      id: "command-centre",
+      name: "Network Command Centre",
+      requirement: 100,
+      description: "Wallboards, blinking racks, and executive visibility.",
+    },
+    {
+      id: "global-campus",
+      name: "Global Operations Campus",
+      requirement: 250,
+      description: "The queue now has its own postcode.",
+    },
+    {
+      id: "autonomous-office",
+      name: "Autonomous Office",
+      requirement: upgradeDefs.length,
+      description: "Every procurement installed. The office can practically run itself.",
+    },
+  ];
 
   const coreAchievementDefs = [
     {
@@ -1407,14 +1445,24 @@
     moraleMeterValue: document.getElementById("moraleMeterValue"),
     officeEvolution: document.getElementById("officeEvolution"),
     officeProps: [...document.querySelectorAll(".office-prop")],
+    officeLevelName: document.getElementById("officeLevelName"),
+    officeLevelProgress: document.getElementById("officeLevelProgress"),
     ticketConveyor: document.getElementById("ticketConveyor"),
     conveyorTickets: [...document.querySelectorAll(".conveyor-ticket")],
     ticketButton: document.getElementById("ticketButton"),
     ticketStamp: document.getElementById("ticketStamp"),
+    nextObjective: document.getElementById("nextObjective"),
+    objectiveName: document.getElementById("objectiveName"),
+    objectiveValue: document.getElementById("objectiveValue"),
+    objectiveProgressFill: document.getElementById("objectiveProgressFill"),
+    objectiveHint: document.getElementById("objectiveHint"),
     upgradeList: document.getElementById("upgradeList"),
     buyModeButtons: [...document.querySelectorAll("[data-buy-mode]")],
     upgradeFilterButtons: [...document.querySelectorAll("[data-upgrade-filter]")],
     upgradeResultCount: document.getElementById("upgradeResultCount"),
+    procurementCollectionCount: document.getElementById("procurementCollectionCount"),
+    procurementCollectionNext: document.getElementById("procurementCollectionNext"),
+    procurementCollectionFill: document.getElementById("procurementCollectionFill"),
     achievementList: document.getElementById("achievementList"),
     achievementDrawer: document.getElementById("achievementDrawer"),
     achievementDrawerButton: document.getElementById("achievementDrawerButton"),
@@ -1438,6 +1486,8 @@
     canvas: document.getElementById("particleCanvas"),
     swimmingTickets: [...document.querySelectorAll(".swimming-ticket")],
     officeBugs: [...document.querySelectorAll(".office-bug")],
+    mobileTabs: [...document.querySelectorAll("[data-mobile-tab]")],
+    mobilePanels: [...document.querySelectorAll("[data-mobile-panel]")],
   };
 
   const ctx = els.canvas.getContext("2d");
@@ -1458,6 +1508,7 @@
   let activeIncident = null;
   let buyMode = "1";
   let upgradeFilter = "all";
+  let currentMobileTab = "desk";
   let achievementFilter = "all";
   let achievementDrawerOpen = false;
   let achievementRenderSignature = "";
@@ -1490,6 +1541,7 @@
   render();
 
   els.ticketButton.addEventListener("click", handleTicketClick);
+  els.nextObjective.addEventListener("click", handleObjectiveClick);
   els.officeBugs.forEach((bug) => bug.addEventListener("click", handleBugSquash));
   els.upgradeList.addEventListener("click", handleUpgradeClick);
   els.buyModeButtons.forEach((button) => button.addEventListener("click", handleBuyModeChange));
@@ -1506,6 +1558,10 @@
   );
   els.saveButton.addEventListener("click", () => saveState(true));
   els.resetButton.addEventListener("click", resetGame);
+  els.mobileTabs.forEach((tab) => {
+    tab.addEventListener("click", handleMobileTabClick);
+    tab.addEventListener("keydown", handleMobileTabKeydown);
+  });
   window.addEventListener("resize", handleResize);
   window.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && achievementDrawerOpen) {
@@ -1919,6 +1975,72 @@
     }
 
     buyUpgrade(button.dataset.upgradeId);
+  }
+
+  function handleObjectiveClick() {
+    const objective = getNextObjectiveUpgrade();
+    if (!objective) {
+      setMobileTab("shop", true);
+      return;
+    }
+
+    if (upgradeFilter !== "all") {
+      upgradeFilter = "all";
+      for (const button of els.upgradeFilterButtons) {
+        const active = button.dataset.upgradeFilter === "all";
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", String(active));
+      }
+      renderUpgrades();
+    }
+
+    setMobileTab("shop", true);
+    const view = upgradeViews.get(objective.id);
+    if (view) {
+      view.button.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+      window.setTimeout(() => view.button.focus({ preventScroll: true }), reduceMotion ? 0 : 260);
+    }
+  }
+
+  function handleMobileTabClick(event) {
+    setMobileTab(event.currentTarget.dataset.mobileTab || "desk", false);
+  }
+
+  function handleMobileTabKeydown(event) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
+    const currentIndex = els.mobileTabs.indexOf(event.currentTarget);
+    let nextIndex = currentIndex;
+    if (event.key === "ArrowLeft") {
+      nextIndex = (currentIndex - 1 + els.mobileTabs.length) % els.mobileTabs.length;
+    } else if (event.key === "ArrowRight") {
+      nextIndex = (currentIndex + 1) % els.mobileTabs.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = els.mobileTabs.length - 1;
+    }
+    const nextTab = els.mobileTabs[nextIndex];
+    setMobileTab(nextTab.dataset.mobileTab || "desk", true);
+  }
+
+  function setMobileTab(tabName, focusTab) {
+    currentMobileTab = ["desk", "queue", "shop"].includes(tabName) ? tabName : "desk";
+    for (const tab of els.mobileTabs) {
+      const active = tab.dataset.mobileTab === currentMobileTab;
+      tab.classList.toggle("is-active", active);
+      tab.setAttribute("aria-selected", String(active));
+      tab.tabIndex = active ? 0 : -1;
+      if (active && focusTab) {
+        tab.focus({ preventScroll: true });
+      }
+    }
+    for (const panel of els.mobilePanels) {
+      panel.classList.toggle("is-mobile-active", panel.dataset.mobilePanel === currentMobileTab);
+    }
   }
 
   function handleBuyModeChange(event) {
@@ -2422,6 +2544,7 @@
     renderQueueComposition();
     renderBuffs();
     renderTimeline();
+    renderNextObjective();
     renderOfficeEvolution();
     renderMoraleMeter();
     renderUpgrades();
@@ -2549,6 +2672,7 @@
 
     const visible = Boolean(activeIncident);
     els.activeIncident.setAttribute("aria-hidden", String(!visible));
+    els.deskStage.classList.toggle("has-active-incident", visible);
     if (!activeIncident) {
       return;
     }
@@ -2685,7 +2809,72 @@
     els.timelineList.replaceChildren(fragment);
   }
 
+  function getOwnedProcurementCount() {
+    return upgradeDefs.reduce((total, upgrade) => total + (owned(upgrade.id) > 0 ? 1 : 0), 0);
+  }
+
+  function getOfficeProgress() {
+    const installed = getOwnedProcurementCount();
+    let current = OFFICE_TIERS[0];
+    let next = null;
+
+    for (const tier of OFFICE_TIERS) {
+      if (installed >= tier.requirement) {
+        current = tier;
+      } else {
+        next = tier;
+        break;
+      }
+    }
+
+    return { installed, current, next };
+  }
+
+  function getNextObjectiveUpgrade() {
+    return upgradeDefs.find((upgrade) => owned(upgrade.id) < 1) || null;
+  }
+
+  function renderNextObjective() {
+    const upgrade = getNextObjectiveUpgrade();
+    if (!upgrade) {
+      els.nextObjective.classList.add("is-complete");
+      els.nextObjective.classList.remove("is-ready");
+      els.objectiveName.textContent = "Procurement portfolio complete";
+      els.objectiveValue.textContent = `${upgradeDefs.length} / ${upgradeDefs.length}`;
+      els.objectiveProgressFill.style.width = "100%";
+      els.objectiveHint.textContent =
+        "Every procurement is installed. Continue scaling or prepare for a new office.";
+      els.nextObjective.setAttribute(
+        "aria-label",
+        "Procurement portfolio complete. Open procurement shop.",
+      );
+      return;
+    }
+
+    const cost = getUpgradeCost(upgrade);
+    const affordable = state.resolved >= cost;
+    const remaining = Math.max(0, cost - state.resolved);
+    const progress = cost > 0 ? Math.min(100, (state.resolved / cost) * 100) : 100;
+    els.nextObjective.classList.remove("is-complete");
+    els.nextObjective.classList.toggle("is-ready", affordable);
+    els.objectiveName.textContent = upgrade.name;
+    els.objectiveValue.textContent = `${formatNumber(Math.min(state.resolved, cost))} / ${formatNumber(
+      cost,
+    )} tickets`;
+    els.objectiveProgressFill.style.width = `${progress}%`;
+    els.objectiveHint.textContent = affordable
+      ? "Budget ready. Open Procurement to approve this upgrade."
+      : `Resolve ${formatNumber(remaining)} more ${remaining === 1 ? "ticket" : "tickets"}.`;
+    els.nextObjective.setAttribute(
+      "aria-label",
+      affordable
+        ? `${upgrade.name} is ready to purchase. Open procurement shop.`
+        : `${upgrade.name}. Resolve ${formatNumber(remaining)} more tickets.`,
+    );
+  }
+
   function renderOfficeEvolution() {
+    const office = getOfficeProgress();
     const classes = {
       "has-coffee": owned("coffee_refill") > 0,
       "has-monitor": owned("second_monitor") > 0 || owned("monitoring_bot") > 0,
@@ -2694,11 +2883,28 @@
         owned("patch_window") > 0 ||
         owned("global_noc") > 0 ||
         owned("cloud_command_center") > 0,
+      "has-plant": office.installed >= 1,
+      "has-team": office.installed >= 5,
+      "has-window": office.installed >= 25,
     };
 
     for (const [className, enabled] of Object.entries(classes)) {
       els.officeEvolution.classList.toggle(className, enabled);
     }
+    for (const tier of OFFICE_TIERS) {
+      els.deskStage.classList.toggle(`office-${tier.id}`, tier.id === office.current.id);
+    }
+
+    els.officeLevelName.textContent = office.current.name;
+    els.officeLevelProgress.textContent = office.next
+      ? `${office.installed} installed · ${office.next.requirement - office.installed} to ${
+          office.next.name
+        }`
+      : `${office.installed} of ${upgradeDefs.length} procurements installed`;
+    els.officeEvolution.setAttribute(
+      "aria-label",
+      `${office.current.name}. ${office.current.description}`,
+    );
 
     const propDetails = [
       ["Coffee Refill Rotation", owned("coffee_refill")],
@@ -2708,6 +2914,9 @@
         "Overnight Patch Window",
         Math.max(owned("patch_window"), owned("global_noc"), owned("cloud_command_center")),
       ],
+      ["Approved Office Plant", Math.min(office.installed, 5)],
+      ["Expanded Service Desk Team", Math.max(0, office.installed - 4)],
+      ["Command Centre View", Math.max(0, office.installed - 24)],
     ];
     els.officeProps.forEach((prop, index) => {
       const [name, level] = propDetails[index];
@@ -2735,26 +2944,54 @@
       `${Math.round(getAchievementBonus() * 100)}% productivity bonus`;
   }
 
+  function getUpgradePresentation(upgrade) {
+    if (upgrade.kind === "click-flat") {
+      return { icon: "⚡", label: "Click power", className: "click" };
+    }
+    if (upgrade.kind === "passive-flat") {
+      return { icon: "🤖", label: "Automation", className: "automation" };
+    }
+    if (upgrade.kind === "click-mult") {
+      return { icon: "🚀", label: "Click booster", className: "booster" };
+    }
+    return { icon: "⚙️", label: "Automation booster", className: "booster" };
+  }
+
   function renderUpgrades() {
     if (!upgradeViews.size) {
       const fragment = document.createDocumentFragment();
 
       for (const upgrade of upgradeDefs) {
+        const presentation = getUpgradePresentation(upgrade);
         const button = document.createElement("button");
-        button.className = "upgrade-item";
+        button.className = `upgrade-item upgrade-${presentation.className}`;
         button.type = "button";
         button.dataset.upgradeId = upgrade.id;
+
+        const icon = document.createElement("span");
+        icon.className = "upgrade-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = presentation.icon;
 
         const copy = document.createElement("span");
         copy.className = "upgrade-copy";
 
+        const heading = document.createElement("span");
+        heading.className = "upgrade-heading";
+
         const name = document.createElement("strong");
         name.textContent = upgrade.name;
 
+        const kind = document.createElement("small");
+        kind.className = "upgrade-kind";
+        kind.textContent = presentation.label;
+
         const description = document.createElement("span");
+        description.className = "upgrade-description";
         description.textContent = upgrade.description;
 
-        copy.append(name, description);
+        heading.append(name, kind);
+        copy.append(heading, description);
 
         const meta = document.createElement("span");
         meta.className = "upgrade-meta";
@@ -2765,21 +3002,44 @@
         const ownedNode = document.createElement("span");
         ownedNode.className = "upgrade-owned";
 
+        const affordability = document.createElement("span");
+        affordability.className = "upgrade-affordability";
+
+        const affordabilityLabel = document.createElement("span");
+        affordabilityLabel.className = "upgrade-affordability-label";
+
+        const affordabilityTrack = document.createElement("span");
+        affordabilityTrack.className = "upgrade-affordability-track";
+
+        const affordabilityFill = document.createElement("span");
+        affordabilityTrack.append(affordabilityFill);
+        affordability.append(affordabilityLabel, affordabilityTrack);
+
         meta.append(costNode, ownedNode);
-        button.append(copy, meta);
+        button.append(icon, copy, meta, affordability);
         fragment.append(button);
-        upgradeViews.set(upgrade.id, { button, costNode, ownedNode });
+        upgradeViews.set(upgrade.id, {
+          button,
+          costNode,
+          ownedNode,
+          affordabilityLabel,
+          affordabilityFill,
+        });
       }
 
       els.upgradeList.append(fragment);
     }
 
     let visibleCount = 0;
+    const objective = getNextObjectiveUpgrade();
     for (const upgrade of upgradeDefs) {
       const view = upgradeViews.get(upgrade.id);
       const purchase = getBulkPurchase(upgrade, buyMode);
       const count = owned(upgrade.id);
       const affordable = purchase.quantity > 0 && state.resolved >= purchase.cost;
+      const remaining = Math.max(0, purchase.cost - state.resolved);
+      const progress =
+        purchase.cost > 0 ? Math.min(100, (state.resolved / purchase.cost) * 100) : 100;
       const wasAffordable = affordableState.get(upgrade.id);
       const visible = matchesUpgradeFilter(upgrade, affordable);
 
@@ -2788,11 +3048,18 @@
         visibleCount += 1;
       }
       view.button.disabled = !affordable;
+      view.button.classList.toggle("is-affordable", affordable);
+      view.button.classList.toggle("is-owned", count > 0);
+      view.button.classList.toggle("is-recommended", objective?.id === upgrade.id);
       view.button.setAttribute(
         "aria-label",
-        `Buy ${formatNumber(purchase.quantity || 1)} ${upgrade.name} for ${formatNumber(
-          purchase.cost,
-        )} tickets`,
+        affordable
+          ? `Buy ${formatNumber(purchase.quantity || 1)} ${upgrade.name} for ${formatNumber(
+              purchase.cost,
+            )} tickets. Ready to approve.`
+          : `Buy ${formatNumber(purchase.quantity || 1)} ${upgrade.name} for ${formatNumber(
+              purchase.cost,
+            )} tickets. Need ${formatNumber(remaining)} more tickets.`,
       );
       setStackedNumber(view.costNode, formatNumberParts(purchase.cost), {
         unitSuffix: "tickets",
@@ -2804,6 +3071,10 @@
       setStackedNumber(view.ownedNode, formatNumberParts(count), {
         unitSuffix: "owned",
       });
+      view.affordabilityLabel.textContent = affordable
+        ? "Ready to approve"
+        : `Need ${formatNumber(remaining)} more`;
+      view.affordabilityFill.style.width = `${progress}%`;
 
       if (wasAffordable === false && affordable && !reduceMotion) {
         view.button.classList.remove("newly-affordable");
@@ -2814,6 +3085,17 @@
       affordableState.set(upgrade.id, affordable);
     }
     els.upgradeResultCount.textContent = `${visibleCount} upgrade${visibleCount === 1 ? "" : "s"}`;
+
+    const office = getOfficeProgress();
+    const collectionProgress = upgradeDefs.length
+      ? Math.min(100, (office.installed / upgradeDefs.length) * 100)
+      : 0;
+    els.procurementCollectionCount.textContent =
+      `${office.installed} of ${upgradeDefs.length} installed`;
+    els.procurementCollectionNext.textContent = office.next
+      ? `Next office: ${office.next.name} at ${office.next.requirement}`
+      : "Portfolio complete · new office ready";
+    els.procurementCollectionFill.style.width = `${collectionProgress}%`;
   }
 
   function matchesUpgradeFilter(upgrade, affordable) {
