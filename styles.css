@@ -3452,3 +3452,76 @@ body.drawer-open {
     transition: none;
   }
 }
+
+/* Procurement virtualization and paint containment */
+
+.upgrades-panel {
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+}
+
+.upgrades-panel .panel-heading,
+.upgrades-panel .procurement-toolbar {
+  flex: 0 0 auto;
+}
+
+.upgrade-list {
+  --upgrade-card-height: 164px;
+  --upgrade-row-gap: 10px;
+  display: block;
+  height: min(68vh, 760px);
+  min-height: 420px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-color: rgba(88, 198, 167, 0.42) rgba(13, 16, 15, 0.7);
+  scrollbar-gutter: stable;
+}
+
+.upgrade-list .upgrade-item {
+  contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: auto var(--upgrade-card-height);
+  height: var(--upgrade-card-height);
+  margin-bottom: var(--upgrade-row-gap);
+}
+
+.upgrade-description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.upgrade-virtual-spacer {
+  width: 1px;
+  min-height: 0;
+  pointer-events: none;
+}
+
+@media (min-width: 900px) and (orientation: landscape) {
+  .upgrades-panel {
+    overflow: hidden;
+  }
+
+  .upgrade-list {
+    height: auto;
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .upgrade-list {
+    height: 65vh;
+    min-height: 480px;
+  }
+}
+
+@media (max-width: 430px) {
+  .upgrade-list {
+    --upgrade-card-height: 194px;
+  }
+}
