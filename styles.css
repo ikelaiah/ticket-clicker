@@ -3453,7 +3453,7 @@ body.drawer-open {
   }
 }
 
-/* Procurement virtualization and paint containment */
+/* Procurement virtualization and layout containment */
 
 .upgrades-panel {
   display: flex;
@@ -3482,17 +3482,9 @@ body.drawer-open {
 
 .upgrade-list .upgrade-item {
   contain: layout style;
-  content-visibility: auto;
-  contain-intrinsic-size: auto var(--upgrade-card-height);
-  height: var(--upgrade-card-height);
+  height: auto;
+  min-height: var(--upgrade-card-height);
   margin-bottom: var(--upgrade-row-gap);
-}
-
-.upgrade-description {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 .upgrade-virtual-spacer {
@@ -3517,11 +3509,5 @@ body.drawer-open {
   .upgrade-list {
     height: 65vh;
     min-height: 480px;
-  }
-}
-
-@media (max-width: 430px) {
-  .upgrade-list {
-    --upgrade-card-height: 194px;
   }
 }

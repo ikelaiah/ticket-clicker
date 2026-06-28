@@ -1524,6 +1524,9 @@
   let virtualUpgradeEnd = -1;
   let virtualUpgradeIds = "";
   let upgradeVirtualRowHeight = 0;
+  const upgradeVirtualHeights = new Map();
+  let upgradeVirtualTopSpacer = null;
+  let upgradeVirtualBottomSpacer = null;
   let upgradeScrollFrame = 0;
   let majorIncidentUntil = 0;
   let wasMajorIncident = false;
@@ -2032,7 +2035,10 @@
       (upgrade) => upgrade.id === objective.id,
     );
     if (objectiveIndex >= 0) {
-      els.upgradeList.scrollTop = objectiveIndex * getUpgradeVirtualRowHeight();
+      els.upgradeList.scrollTop = getUpgradeVirtualOffset(
+        getFilteredUpgradeDefs(),
+        objectiveIndex,
+      );
       virtualUpgradeStart = -1;
       virtualUpgradeEnd = -1;
       virtualUpgradeIds = "";
@@ -3133,7 +3139,7 @@
     }
     const targetIndex = Math.min(upgrades.length - 1, Math.max(0, index));
     const target = upgrades[targetIndex];
-    els.upgradeList.scrollTop = targetIndex * getUpgradeVirtualRowHeight();
+    els.upgradeList.scrollTop = getUpgradeVirtualOffset(upgrades, targetIndex);
     virtualUpgradeStart = -1;
     virtualUpgradeEnd = -1;
     virtualUpgradeIds = "";
@@ -3216,6 +3222,36 @@
     const rowGap = Number.parseFloat(styles.getPropertyValue("--upgrade-row-gap")) || 10;
     upgradeVirtualRowHeight = cardHeight + rowGap;
     return upgradeVirtualRowHeight;
+  }
+
+  function getUpgradeVirtualOffsets(upgrades) {
+    const estimatedRowHeight = getUpgradeVirtualRowHeight();
+    const offsets = new Array(upgrades.length + 1);
+    offsets[0] = 0;
+    for (let index = 0; index < upgrades.length; index += 1) {
+      offsets[index + 1] =
+        offsets[index] +
+        (upgradeVirtualHeights.get(upgrades[index].id) || estimatedRowHeight);
+    }
+    return offsets;
+  }
+
+  function getUpgradeVirtualOffset(upgrades, index) {
+    return getUpgradeVirtualOffsets(upgrades)[Math.max(0, Math.min(index, upgrades.length))];
+  }
+
+  function findUpgradeVirtualIndex(offsets, scrollOffset) {
+    let low = 0;
+    let high = Math.max(0, offsets.length - 2);
+    while (low < high) {
+      const middle = Math.ceil((low + high) / 2);
+      if (offsets[middle] <= scrollOffset) {
+        low = middle;
+      } else {
+        high = middle - 1;
+      }
+    }
+    return low;
   }
 
   function createUpgradeView(upgrade) {
@@ -3353,17 +3389,21 @@
 
     const upgrades = getFilteredUpgradeDefs();
     const rowHeight = getUpgradeVirtualRowHeight();
+    const offsets = getUpgradeVirtualOffsets(upgrades);
     const viewportHeight = Math.max(rowHeight, els.upgradeList.clientHeight || rowHeight * 6);
-    const visibleRows = Math.ceil(viewportHeight / rowHeight);
-    const maximumFirstVisible = Math.max(0, upgrades.length - visibleRows);
-    const firstVisible = Math.min(
-      maximumFirstVisible,
-      Math.floor(els.upgradeList.scrollTop / rowHeight),
-    );
+    const firstVisible = upgrades.length
+      ? findUpgradeVirtualIndex(offsets, els.upgradeList.scrollTop)
+      : 0;
+    const lastVisible = upgrades.length
+      ? findUpgradeVirtualIndex(
+          offsets,
+          Math.min(offsets[offsets.length - 1], els.upgradeList.scrollTop + viewportHeight),
+        )
+      : 0;
     let start = Math.max(0, firstVisible - UPGRADE_VIRTUAL_OVERSCAN);
     let end = Math.min(
       upgrades.length,
-      firstVisible + visibleRows + UPGRADE_VIRTUAL_OVERSCAN,
+      lastVisible + UPGRADE_VIRTUAL_OVERSCAN + 1,
     );
     if (end - start < UPGRADE_VIRTUAL_MINIMUM_ROWS) {
       end = Math.min(upgrades.length, start + UPGRADE_VIRTUAL_MINIMUM_ROWS);
@@ -3379,7 +3419,7 @@
       const fragment = document.createDocumentFragment();
       const topSpacer = document.createElement("div");
       topSpacer.className = "upgrade-virtual-spacer";
-      topSpacer.style.height = `${start * rowHeight}px`;
+      topSpacer.style.height = `${offsets[start]}px`;
       fragment.append(topSpacer);
 
       upgradeViews.clear();
@@ -3391,9 +3431,14 @@
 
       const bottomSpacer = document.createElement("div");
       bottomSpacer.className = "upgrade-virtual-spacer";
-      bottomSpacer.style.height = `${Math.max(0, upgrades.length - end) * rowHeight}px`;
+      bottomSpacer.style.height = `${Math.max(
+        0,
+        offsets[offsets.length - 1] - offsets[end],
+      )}px`;
       fragment.append(bottomSpacer);
       els.upgradeList.replaceChildren(fragment);
+      upgradeVirtualTopSpacer = topSpacer;
+      upgradeVirtualBottomSpacer = bottomSpacer;
       virtualUpgradeStart = start;
       virtualUpgradeEnd = end;
       virtualUpgradeIds = rangeIds;
@@ -3404,6 +3449,36 @@
       const view = upgradeViews.get(upgrade.id);
       if (view) {
         renderUpgradeView(upgrade, view, objectiveId);
+      }
+    }
+
+    const rowGap =
+      Number.parseFloat(
+        window.getComputedStyle(els.upgradeList).getPropertyValue("--upgrade-row-gap"),
+      ) || 10;
+    let measuredHeightChanged = false;
+    for (const upgrade of upgrades.slice(start, end)) {
+      const view = upgradeViews.get(upgrade.id);
+      if (!view) {
+        continue;
+      }
+      const measuredHeight = view.button.offsetHeight + rowGap;
+      if (Math.abs((upgradeVirtualHeights.get(upgrade.id) || 0) - measuredHeight) > 1) {
+        upgradeVirtualHeights.set(upgrade.id, measuredHeight);
+        measuredHeightChanged = true;
+      }
+    }
+
+    if (measuredHeightChanged) {
+      const updatedOffsets = getUpgradeVirtualOffsets(upgrades);
+      const anchorOffset = els.upgradeList.scrollTop - offsets[firstVisible];
+      els.upgradeList.scrollTop = Math.max(0, updatedOffsets[firstVisible] + anchorOffset);
+      if (upgradeVirtualTopSpacer && upgradeVirtualBottomSpacer) {
+        upgradeVirtualTopSpacer.style.height = `${updatedOffsets[start]}px`;
+        upgradeVirtualBottomSpacer.style.height = `${Math.max(
+          0,
+          updatedOffsets[updatedOffsets.length - 1] - updatedOffsets[end],
+        )}px`;
       }
     }
 
@@ -3724,6 +3799,7 @@
     resizeCanvas();
     clampDecorationsToStage();
     upgradeVirtualRowHeight = 0;
+    upgradeVirtualHeights.clear();
     virtualUpgradeStart = -1;
     virtualUpgradeEnd = -1;
     virtualUpgradeIds = "";
